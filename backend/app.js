@@ -7,6 +7,9 @@ import { dirname, join } from 'path';
 
 import designRoutes from './modules/designs/design.routes.js';
 import userRoutes from './modules/users/user.routes.js'
+import templateRouter from './modules/templates/template.routes.js';
+import contactRouter from './modules/contact/contact.routes.js';
+
 const app = express();
 
 // Needed to replicate __dirname in ES modules
@@ -21,5 +24,6 @@ app.use(express.static(join(__dirname, 'public')));
 
 app.use('/api/designs', designRoutes);
 app.use('/api/users',userRoutes)
-
+app.use('/api/contact', contactRouter);
+app.use('/api/templates', templateRouter);
 export default app;

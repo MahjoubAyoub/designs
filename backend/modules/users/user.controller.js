@@ -1,7 +1,7 @@
 import * as userService from './service.js';
 
 export const createUser = async (req, res) => {
-try {
+  try {
     const user = await userService.createUser(req.body);
     res.status(201).json(user);
   } catch (err) {
@@ -71,7 +71,7 @@ export const uploadProfilePhoto = async (req, res) => {
 export const resetPassword = async (req, res) => {
   try {
     const { email } = req.body;
-    const newPassword = await userService.resetPassword(email); // e.g., auto-gen password or token link
+    const newPassword = await userService.resetPassword(email);
     res.json({ message: 'Password reset successfully', newPassword });
   } catch (err) {
     res.status(400).json({ error: err.message });
@@ -85,6 +85,20 @@ export const changePassword = async (req, res) => {
 
     await userService.changePassword(userId, oldPassword, newPassword);
     res.json({ message: 'Password changed successfully' });
+  } catch (err) {
+    res.status(400).json({ error: err.message });
+  }
+};
+
+export const updateProfile = async (req, res) => {
+  try {
+    const userId = req.params.id;
+    const updates = req.body;
+    if (req.file?.filename) {
+      updates.photoProfil = req.file.filename;
+    }
+    const updated = await userService.updateUser(userId, updates);
+    res.json(updated);
   } catch (err) {
     res.status(400).json({ error: err.message });
   }
