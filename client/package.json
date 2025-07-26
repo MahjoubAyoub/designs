@@ -1,0 +1,52 @@
+{
+  "name": "vue-exam",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "vite",
+    "build": "vite build",
+    "preview": "vite preview",
+    "test:unit": "vitest",
+    "lint:oxlint": "oxlint . --fix -D correctness --ignore-path .gitignore",
+    "lint:eslint": "eslint . --fix",
+    "lint": "run-s lint:*",
+    "format": "prettier --write src/"
+  },
+  "dependencies": {
+    "@tailwindcss/vite": "^4.1.10",
+    "axios": "^1.10.0",
+    "konva": "^9.3.20",
+    "mobx-vue-lite": "^0.4.3",
+    "pinia": "^3.0.1",
+    "polotno": "^2.25.4",
+    "preline": "^3.1.0",
+    "react-icons": "^5.5.0",
+    "tailwind": "^4.0.0",
+    "vue": "^3.5.13",
+    "vue-konva": "^3.2.1",
+    "vue-router": "^4.5.0",
+    "vue3-easy-data-table": "^1.5.47"
+  },
+  "devDependencies": {
+    "@eslint/js": "^9.22.0",
+    "@vitejs/plugin-react": "^4.6.0",
+    "@vitejs/plugin-vue": "^5.2.3",
+    "@vitest/eslint-plugin": "^1.1.39",
+    "@vue/eslint-config-prettier": "^10.2.0",
+    "@vue/test-utils": "^2.4.6",
+    "eslint": "^9.22.0",
+    "eslint-plugin-oxlint": "^0.16.0",
+    "eslint-plugin-vue": "~10.0.0",
+    "globals": "^16.0.0",
+    "jsdom": "^26.0.0",
+    "lucide-vue-next": "^0.525.0",
+    "mobx-react-lite": "^4.1.0",
+    "npm-run-all2": "^7.0.2",
+    "oxlint": "^0.16.0",
+    "prettier": "3.5.3",
+    "vite": "^6.2.4",
+    "vite-plugin-vue-devtools": "^7.7.2",
+    "vitest": "^3.1.1"
+  }
+}
