@@ -1,0 +1,11 @@
+{
+  "name": "vue-exam",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "backend": "npm --prefix backend start",
+    "client": "npm --prefix client run dev",
+    "start": "concurrently --raw \"npm run client\" \"npm run backend\""
+  }
+}

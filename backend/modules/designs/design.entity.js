@@ -10,6 +10,8 @@ export default new EntitySchema({
     dateCreation: { type: 'datetime', createDate: true },
     dateModification: { type: 'datetime', updateDate: true },
     depuisTemplate: { type: 'boolean', default: false },
+    data: { type: 'simple-json', nullable: true },
+    imageUrl: { type: 'longtext', nullable: true }, // Preview image as data URL
   },
   relations: {
     user: {

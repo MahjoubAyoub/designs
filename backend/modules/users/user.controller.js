@@ -11,8 +11,8 @@ export const createUser = async (req, res) => {
 
 export const loginUser = async (req, res) => {
   try {
-    const token = await userService.authenticate(req.body.email, req.body.password);
-    res.status(200).json({ token });
+    const { token, user } = await userService.authenticate(req.body.email, req.body.password);
+    res.status(200).json({ token, user });
   } catch (err) {
     res.status(401).json({ error: 'Invalid credentials' });
   }

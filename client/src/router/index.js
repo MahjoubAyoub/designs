@@ -50,6 +50,18 @@ const router = createRouter({
       component: ForgetPassword,
     },
     {
+      path: '/create',
+      name: 'Create',
+      component: DesignView,
+      children:[
+         {
+            path: '/create/:id',
+            name: 'CreateWithId',
+            component: DesignView,
+          },
+      ]
+    },
+    {
       path: '/dashboard',
       component: DashboardView,
       children: [
@@ -74,11 +86,6 @@ const router = createRouter({
           component: DashboardNew,
         },
       ],
-    },
-    {
-      path: '/create',
-      name: 'Create',
-      component: DesignView,
     },
   ],
 })

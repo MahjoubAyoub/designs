@@ -1,9 +1,88 @@
+```vue
 <script setup>
-import InputBox from '@/components/molecules/InputBox.vue'
+import { ref } from 'vue';
+import { useRouter } from 'vue-router';
+import InputBox from '@/components/molecules/InputBox.vue';
+import BaseButton from '@/components/atoms/BaseButton.vue'; // Adjust path if needed
 
-const email = defineModel('email')
-const password = defineModel('password')
-const confirm = defineModel('confirm')
+const email = defineModel('email');
+const password = defineModel('password');
+const confirm = defineModel('confirm');
+const nom = defineModel('nom');
+const error = ref(''); // Store error messages
+const router = useRouter(); // For redirecting after signup/login
+
+// Use environment variable for API URL
+const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:3000';
+
+const handleSignup = async () => {
+  error.value = '';
+
+  if (password.value !== confirm.value) {
+    error.value = 'Passwords do not match';
+    return;
+  }
+
+  try {
+    const response = await fetch(`${API_URL}/api/users/register`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        email: email.value,
+        motDePasse: password.value,
+        nom: nom.value,
+      }),
+    });
+
+    const data = await response.json();
+
+    if (!response.ok) {
+      throw new Error(data.error || 'Signup failed');
+    }
+
+    // Auto-login after successful signup
+    await autoLogin(email.value, password.value);
+  } catch (err) {
+    error.value = err.message;
+    console.error('Signup error:', err);
+  }
+};
+
+// Auto-login after signup
+const autoLogin = async (email, password) => {
+  try {
+    const response = await fetch(`${API_URL}/api/users/login`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        email,
+        password,
+      }),
+    });
+
+    const data = await response.json();
+
+    if (!response.ok) {
+      throw new Error(data.error || 'Login failed');
+    }
+
+    // Store the JWT token and user info
+    localStorage.setItem('token', data.token);
+    if (data.user) {
+      localStorage.setItem('user', JSON.stringify(data.user));
+    }
+    console.log('JWT Token:', data.token); // Log token for debugging
+    // Redirect to a protected route (e.g., dashboard)
+    router.push('/dashboard');
+  } catch (err) {
+    error.value = err.message;
+    console.error('Login error:', err);
+  }
+};
 </script>
 
 <template>
@@ -18,7 +97,10 @@ const confirm = defineModel('confirm')
       </a>
     </p>
   </div>
-  <div class="flex flex-col gap-4">
+
+  <form @submit.prevent="handleSignup" class="flex flex-col gap-4">
+    <div v-if="error" class="text-red-500 text-sm">{{ error }}</div>
+
     <div class="mt-5">
       <BaseButton type="button" class="w-full py-10">
         <svg class="w-4 h-auto" width="46" height="47" viewBox="0 0 46 47" fill="none">
@@ -50,23 +132,38 @@ const confirm = defineModel('confirm')
 
     <InputBox
       id="email_box"
-      label="Your Email Address"
+      label="Email Address"
       placeholder="Insert E-mail"
       v-model="email"
+      type="email"
+      required
+    />
+    <InputBox
+      id="UserName_box"
+      label="UserName"
+      placeholder=" Your Name"
+      v-model="nom"
+      type="text"
+      required
     />
     <InputBox
       id="password_box"
-      label="Your Password"
+      label="Password"
       placeholder="Insert Password"
       v-model="password"
+      type="password"
+      required
     />
     <InputBox
       id="confirm_box"
       label="Confirm Password"
       placeholder="Confirm Password"
       v-model="confirm"
+      type="password"
+      required
     />
 
-    <BaseButton type="submit" class="w-full mt-4 py-10"> Sign up </BaseButton>
-  </div>
+    <BaseButton type="submit" class="w-full mt-4 py-10">Sign up</BaseButton>
+  </form>
 </template>
+```

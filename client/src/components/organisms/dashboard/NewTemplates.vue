@@ -1,15 +1,19 @@
 <script setup>
-import { ref } from 'vue'
+import { ref, onMounted } from 'vue'
+import { getPublicDesigns } from '@/api/designs.js'
+import { useRouter } from 'vue-router'
 import InputBox from '@/components/molecules/InputBox.vue'
 import BaseInput from '@/components/atoms/BaseInput.vue'
 
 // Reactive state for form data
 const name = ref('')
-const description = ref('')
 const selectedSize = ref('a4')
 const selectedTemplate = ref('cv')
 const customWidth = ref(0)
 const customHeight = ref(0)
+const activeTab = ref('empty')
+const publicDesigns = ref([])
+const router = useRouter()
 
 // Predefined canvas sizes
 const canvasSizes = [
@@ -34,6 +38,27 @@ const templates = [
     preview: 'PowerPoint Preview',
   },
 ]
+
+function handleSubmit() {
+  if (activeTab.value === 'empty') {
+    let width, height
+    if (selectedSize.value === 'custom') {
+      width = customWidth.value
+      height = customHeight.value
+    } else {
+      const size = canvasSizes.find(s => s.id === selectedSize.value)
+      width = size?.width || 0
+      height = size?.height || 0
+    }
+    router.push({ path: '/create', query: { width, height, name: name.value } })
+    return
+  }
+  // You can add logic for other tabs (pre-defined, public) here
+}
+
+onMounted(async () => {
+  publicDesigns.value = await getPublicDesigns();
+})
 </script>
 
 <template>
@@ -48,15 +73,7 @@ const templates = [
           </h2>
         </div>
         <div class="sm:col-span-12">
-          <InputBox id="template_name" label="Name" placeholder="Name" v-model="name" />
-        </div>
-        <div class="sm:col-span-12">
-          <InputBox
-            id="template_desc"
-            label="Description"
-            placeholder="Description"
-            v-model="description"
-          />
+          <InputBox id="template_name" label="Design Name" placeholder="Choose your design name" v-model="name" />
         </div>
       </div>
       <!-- End Section -->
@@ -208,10 +225,15 @@ const templates = [
             aria-labelledby="basic-tabs-item-3"
             :class="{ hidden: activeTab !== 'public' }"
           >
-            <p class="text-gray-500">
-              This is the
-              <em class="font-semibold text-gray-800">third</em> item's tab body.
-            </p>
+            <div v-if="publicDesigns.length === 0" class="text-gray-500">No public designs available.</div>
+            <div v-else class="grid sm:grid-cols-3 gap-4">
+              <div v-for="design in publicDesigns" :key="design.id" class="border rounded-lg p-4 flex flex-col items-center">
+                <img :src="design.imageUrl" alt="Preview" class="w-24 h-24 object-cover mb-2 rounded" />
+                <div class="font-semibold">{{ design.name }}</div>
+                <div class="text-xs text-gray-500 mb-2">By User {{ design.user?.id || 'Unknown' }}</div>
+                <router-link :to="`/create/${design.id}`" class="bg-blue-600 text-white px-3 py-1 rounded">Open</router-link>
+              </div>
+            </div>
           </div>
         </div>
       </div>

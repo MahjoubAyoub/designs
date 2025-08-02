@@ -11,7 +11,7 @@ try {
 
 export const loginUser = async (req, res) => {
   try {
-    const {token , user } = await aythService.authenticate(req.body.email, req.body.password);
+    const {token , user } = await authService.authenticate(req.body.email, req.body.password);
     res.status(200).json({ success: true, token, user })
   } catch (err) {
     res.status(401).json({ error: 'Invalid credentials' });

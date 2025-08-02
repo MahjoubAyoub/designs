@@ -32,58 +32,19 @@
         body-row-class-name="even:bg-gray-100 odd:bg-white hover:bg-gray-200"
         body-item-class-name="p-3 border-b border-gray-300"
       >
-        <!-- Filter for Name -->
-        <template #header-name="header">
-          <div class="filter-column flex items-center space-x-1">
-            <BaseIcon name="ListFilter" />
-            <span>{{ header.text }}</span>
-            <div
-              v-if="showNameFilter"
-              class="filter-menu absolute bg-white border border-gray-300 rounded shadow-lg p-2 mt-8 z-20"
-            >
-              <input
-                v-model="nameCriteria"
-                class="border border-gray-300 rounded px-2 py-1 w-40"
-                placeholder="Filter by name"
-              />
-            </div>
-          </div>
+        <!-- Preview image cell, clickable -->
+        <template #item-preview="{ preview, id }">
+          <router-link :to="`/create/${id}`">
+            <img :src="preview" alt="Design preview" style="width:80px; height:60px; object-fit:cover; border-radius:6px; border:1px solid #ccc; cursor:pointer;" />
+          </router-link>
         </template>
-
-        <!-- Filter for Creation Date -->
-        <template #header-creation="header">
-          <div class="filter-column flex items-center space-x-1">
-            <BaseIcon name="ListFilter" />
-            <span>{{ header.text }}</span>
-            <div
-              v-if="showCreationFilter"
-              class="filter-menu absolute bg-white border border-gray-300 rounded shadow-lg p-2 mt-8 z-20"
-            >
-              <input
-                v-model="creationCriteria"
-                type="date"
-                class="border border-gray-300 rounded px-2 py-1 w-40"
-              />
-            </div>
-          </div>
+        <!-- Name cell, clickable -->
+        <template #item-name="{ name, id }">
+          <router-link :to="`/create/${id}`" class="text-blue-600 hover:underline cursor-pointer">{{ name }}</router-link>
         </template>
-
-        <!-- Filter for Update Date -->
-        <template #header-update="header">
-          <div class="filter-column flex items-center space-x-1">
-            <BaseIcon name="ListFilter" />
-            <span>{{ header.text }}</span>
-            <div
-              v-if="showUpdateFilter"
-              class="filter-menu absolute bg-white border border-gray-300 rounded shadow-lg p-2 mt-8 z-20"
-            >
-              <input
-                v-model="updateCriteria"
-                type="date"
-                class="border border-gray-300 rounded px-2 py-1 w-40"
-              />
-            </div>
-          </div>
+        <!-- Delete button cell -->
+        <template #item-delete="{ delete: id }">
+          <button @click="handleDelete(id)" class="bg-red-500 hover:bg-red-700 text-white px-3 py-1 rounded">Delete</button>
         </template>
       </EasyDataTable>
     </div>
@@ -93,35 +54,48 @@
 <script lang="ts" setup>
 import { ref, computed, onMounted } from 'vue'
 import EasyDataTable from 'vue3-easy-data-table'
-import type { Header, Item, FilterOption } from 'vue3-easy-data-table'
+import { Header, Item, FilterOption } from 'vue3-easy-data-table'
 import BaseButton from '@/components/atoms/BaseButton.vue'
 import BaseIcon from '@/components/atoms/BaseIcon.vue'
 
-// Table headers
+import { getAllDesigns, deleteDesign } from '@/api/designs.js'
+
 const headers: Header[] = [
-  { text: 'Designs', value: 'name' },
+  { text: 'Design Name', value: 'name' },
   { text: 'Preview', value: 'preview' },
-  { text: 'Creation Date', value: 'creation', sortable: true },
-  { text: 'Update Date', value: 'update', sortable: true },
+  { text: 'Creation Date', value: 'dateCreation', sortable: true },
+  { text: 'Update Date', value: 'dateModification', sortable: true },
   { text: 'Delete', value: 'delete' },
 ]
 
-const items: Item[] = [
-  {
-    name: 'Design Test',
-    preview: 'img',
-    creation: '10-07-2025',
-    update: '11-07-2025',
-    delete: 'Button',
-  },
-  {
-    name: 'Salem weld omi',
-    preview: 'img',
-    creation: '20-07-2025',
-    update: '21-07-2025',
-    delete: 'Button',
-  },
-]
+const items = ref<Item[]>([])
+
+async function fetchDesigns() {
+  try {
+    const user = JSON.parse(localStorage.getItem('user') || '{}');
+    const userId = user.id;
+    const designs = await getAllDesigns(userId);
+    items.value = designs.map(d => ({
+      id: d.id,
+      name: d.name,
+      preview: d.imageUrl || '',
+      dateCreation: d.dateCreation ? d.dateCreation.split('T')[0] : '',
+      dateModification: d.dateModification ? d.dateModification.split('T')[0] : '',
+      delete: d.id,
+    }))
+  } catch (e) {
+    items.value = []
+  }
+}
+
+onMounted(fetchDesigns)
+
+async function handleDelete(id) {
+  if (confirm('Are you sure you want to delete this design?')) {
+    await deleteDesign(id)
+    fetchDesigns()
+  }
+}
 // Search and filter
 const searchValue = ref('')
 const nameCriteria = ref('')

@@ -1,8 +1,44 @@
-<script setup>
-import InputBox from '@/components/molecules/InputBox.vue'
 
-const email = defineModel('email')
-const password = defineModel('password')
+<script setup>
+import { ref } from 'vue';
+import { useRouter } from 'vue-router';
+import InputBox from '@/components/molecules/InputBox.vue';
+import BaseButton from '@/components/atoms/BaseButton.vue';
+
+const email = defineModel('email');
+const password = defineModel('password');
+const error = ref('');
+const router = useRouter();
+
+const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:3000';
+
+const handleLogin = async () => {
+  error.value = '';
+  try {
+    const response = await fetch(`${API_URL}/api/users/login`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        email: email.value,
+        password: password.value,
+      }),
+    });
+    const data = await response.json();
+    if (!response.ok) {
+      throw new Error(data.error || 'Login failed');
+    }
+    localStorage.setItem('token', data.token);
+    if (data.user) {
+      localStorage.setItem('user', JSON.stringify(data.user));
+    }
+    router.push('/dashboard');
+  } catch (err) {
+    error.value = err.message;
+    console.error('Login error:', err);
+  }
+};
 </script>
 
 <template>
@@ -17,7 +53,8 @@ const password = defineModel('password')
       </a>
     </p>
   </div>
-  <div class="flex flex-col gap-4">
+  <form @submit.prevent="handleLogin" class="flex flex-col gap-4">
+    <div v-if="error" class="text-red-500 text-sm">{{ error }}</div>
     <div class="mt-5">
       <BaseButton type="button" class="w-full py-10">
         <svg class="w-4 h-auto" width="46" height="47" viewBox="0 0 46 47" fill="none">
@@ -48,7 +85,7 @@ const password = defineModel('password')
     </div>
 
     <InputBox id="email_box" label="Email" placeholder="Insert E-mail" v-model="email" />
-    <InputBox id="password_box" label="Password" placeholder="Insert Password" v-model="password " type="password" />
+    <InputBox id="password_box" label="Password" placeholder="Insert Password" v-model="password" type="password" />
 
     <div class="flex items-center justify-between text-sm mt-2">
       <label class="flex items-center gap-2">
@@ -59,5 +96,5 @@ const password = defineModel('password')
     </div>
 
     <BaseButton type="submit" class="w-full mt-4 py-10"> Sign in </BaseButton>
-  </div>
+  </form>
 </template>

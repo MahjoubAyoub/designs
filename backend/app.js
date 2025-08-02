@@ -9,6 +9,7 @@ import designRoutes from './modules/designs/design.routes.js';
 import userRoutes from './modules/users/user.routes.js'
 import templateRouter from './modules/templates/template.routes.js';
 import contactRouter from './modules/contact/contact.routes.js';
+import cors from 'cors';
 
 const app = express();
 
@@ -21,9 +22,14 @@ app.use(express.json());
 app.use(express.urlencoded({ extended: false }));
 app.use(cookieParser());
 app.use(express.static(join(__dirname, 'public')));
+app.use(cors({
+  origin: 'http://localhost:5173', 
+  credentials: true
+}));
 
 app.use('/api/designs', designRoutes);
 app.use('/api/users',userRoutes)
 app.use('/api/contact', contactRouter);
 app.use('/api/templates', templateRouter);
+
 export default app;

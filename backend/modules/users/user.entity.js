@@ -16,7 +16,7 @@ export default new EntitySchema({
       type: 'varchar',
       unique: true,
     },
-    motDePasse: {
+    password: {
       type: 'varchar',
     },
     photoProfil: {
