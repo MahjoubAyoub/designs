@@ -1,5 +1,83 @@
-<script setup lang="ts">
+<script setup>
+import { ref } from 'vue'
 import InputBox from '@/components/molecules/InputBox.vue'
+import { sendContactMessage } from '@/api/contact.js'
+
+// Form data
+const formData = ref({
+  firstName: '',
+  lastName: '',
+  email: '',
+  company: '',
+  website: '',
+  message: ''
+})
+
+// Form state
+const isSubmitting = ref(false)
+const submitStatus = ref(null) // 'success', 'error', or null
+const errorMessage = ref('')
+
+// Form validation
+const validateForm = () => {
+  if (!formData.value.firstName.trim()) {
+    throw new Error('First name is required')
+  }
+  if (!formData.value.lastName.trim()) {
+    throw new Error('Last name is required')
+  }
+  if (!formData.value.email.trim()) {
+    throw new Error('Email is required')
+  }
+  if (!formData.value.email.includes('@')) {
+    throw new Error('Please enter a valid email address')
+  }
+  if (!formData.value.message.trim()) {
+    throw new Error('Message is required')
+  }
+}
+
+// Handle form submission
+const handleSubmit = async () => {
+  try {
+    isSubmitting.value = true
+    submitStatus.value = null
+    errorMessage.value = ''
+    
+    // Validate form
+    validateForm()
+    
+    // Prepare data for API
+    const contactData = {
+      name: `${formData.value.firstName} ${formData.value.lastName}`,
+      email: formData.value.email,
+      message: `Company: ${formData.value.company}\nWebsite: ${formData.value.website}\n\nMessage:\n${formData.value.message}`
+    }
+    
+    // Send to backend
+    await sendContactMessage(contactData)
+    
+    // Success
+    submitStatus.value = 'success'
+    
+    // Reset form
+    formData.value = {
+      firstName: '',
+      lastName: '',
+      email: '',
+      company: '',
+      website: '',
+      message: ''
+    }
+    
+  } catch (error) {
+    console.error('Contact form error:', error)
+    submitStatus.value = 'error'
+    errorMessage.value = error.message || 'Failed to send message. Please try again.'
+  } finally {
+    isSubmitting.value = false
+  }
+}
 </script>
 
 <template>
@@ -26,59 +104,100 @@ import InputBox from '@/components/molecules/InputBox.vue'
             Fill in the form
           </h2>
 
-          <form>
+          <form @submit.prevent="handleSubmit">
+            <!-- Success Message -->
+            <div v-if="submitStatus === 'success'" class="mb-4 p-4 text-green-700 bg-green-100 rounded-lg">
+              ✅ Thank you! Your message has been sent successfully. We'll get back to you soon.
+            </div>
+            
+            <!-- Error Message -->
+            <div v-if="submitStatus === 'error'" class="mb-4 p-4 text-red-700 bg-red-100 rounded-lg">
+              ❌ {{ errorMessage }}
+            </div>
+            
             <div class="mt-6 grid gap-4 lg:gap-6">
               <!-- Grid -->
               <div class="grid grid-cols-1 sm:grid-cols-2 gap-4 lg:gap-6">
                 <div>
-                  <InputBox label="First Name" />
+                  <InputBox 
+                    label="First Name" 
+                    v-model="formData.firstName"
+                    :disabled="isSubmitting"
+                    required
+                  />
                 </div>
 
                 <div>
-                  <input-box label="Last Name" />
+                  <InputBox 
+                    label="Last Name" 
+                    v-model="formData.lastName"
+                    :disabled="isSubmitting"
+                    required
+                  />
                 </div>
               </div>
               <!-- End Grid -->
 
               <div>
-                <input-box label="Work Email" />
+                <InputBox 
+                  label="Work Email" 
+                  type="email"
+                  v-model="formData.email"
+                  :disabled="isSubmitting"
+                  required
+                />
               </div>
 
               <!-- Grid -->
               <div class="grid grid-cols-1 sm:grid-cols-2 gap-4 lg:gap-6">
                 <div>
-                  <input-box label="Company" />
+                  <InputBox 
+                    label="Company" 
+                    v-model="formData.company"
+                    :disabled="isSubmitting"
+                  />
                 </div>
 
                 <div>
-                  <input-box label="Company Website" />
+                  <InputBox 
+                    label="Company Website" 
+                    v-model="formData.website"
+                    :disabled="isSubmitting"
+                    placeholder="https://example.com"
+                  />
                 </div>
               </div>
               <!-- End Grid -->
               <div>
                 <label
-                  for="hs-about-hire-us-1"
+                  for="contact-message"
                   class="block mb-2 text-sm text-gray-700 font-medium dark:text-white"
-                  >Details</label
+                  >Details *</label
                 >
                 <textarea
-                  id="hs-about-hire-us-1"
-                  name="hs-about-hire-us-1"
+                  id="contact-message"
+                  v-model="formData.message"
+                  :disabled="isSubmitting"
                   rows="4"
                   class="py-2.5 sm:py-3 px-4 block w-full rounded-lg sm:text-sm focus:border-blue-500 focus:ring-blue-500 disabled:opacity-50 disabled:pointer-events-none border-gray-300"
+                  placeholder="Tell us about your project, requirements, or any questions you have..."
+                  required
                 ></textarea>
               </div>
             </div>
+            
+            <!-- Submit Button -->
+            <div class="mt-6 grid">
+              <button
+                type="submit"
+                :disabled="isSubmitting"
+                class="w-full py-3 px-4 inline-flex justify-center items-center gap-x-2 text-sm font-medium rounded-lg border border-transparent bg-blue-600 text-white hover:bg-blue-700 focus:outline-hidden focus:bg-blue-700 disabled:opacity-50 disabled:pointer-events-none"
+              >
+                <span v-if="isSubmitting" class="animate-spin inline-block w-4 h-4 border-[3px] border-current border-t-transparent text-white rounded-full" role="status" aria-label="loading"></span>
+                {{ isSubmitting ? 'Sending...' : 'Send inquiry' }}
+              </button>
+            </div>
           </form>
-          <!-- End Grid -->
-          <div class="mt-6 grid">
-            <button
-              type="submit"
-              class="w-full py-3 px-4 inline-flex justify-center items-center gap-x-2 text-sm font-medium rounded-lg border border-transparent bg-blue-600 text-white hover:bg-blue-700 focus:outline-hidden focus:bg-blue-700 disabled:opacity-50 disabled:pointer-events-none"
-            >
-              Send inquiry
-            </button>
-          </div>
 
           <div class="mt-3 text-center">
             <p class="text-sm text-gray-500 dark:text-neutral-500">

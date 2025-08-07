@@ -5,6 +5,8 @@ defineProps({
   id: String,
   placeholder: String,
   inputClass: { type: String, default: '' },
+  disabled: { type: Boolean, default: false },
+  required: { type: Boolean, default: false },
 })
 const inputModel = defineModel()
 </script>
@@ -20,6 +22,8 @@ const inputModel = defineModel()
       :placeholder="placeholder"
       v-model="inputModel"
       :class="inputClass"
+      :disabled="disabled"
+      :required="required"
     />
   </div>
 </template>

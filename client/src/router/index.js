@@ -13,6 +13,8 @@ import DashboardArchive from '@/components/organisms/dashboard/TableApp.vue'
 import DashboardSettings from '@/components/organisms/dashboard/UserProfile.vue'
 import DashboardPublic from '@/components/organisms/dashboard/PublicTemplates.vue'
 import DashboardNew from '@/components/organisms/dashboard/NewTemplates.vue'
+import UserTemplates from '@/components/organisms/dashboard/UserTemplates.vue'
+import FeedbackPage from '@/components/organisms/dashboard/FeedbackPage.vue'
 // Design
 import DesignView from '@/views/DesignView.vue'
 
@@ -53,13 +55,11 @@ const router = createRouter({
       path: '/create',
       name: 'Create',
       component: DesignView,
-      children:[
-         {
-            path: '/create/:id',
-            name: 'CreateWithId',
-            component: DesignView,
-          },
-      ]
+    },
+    {
+      path: '/create/:id',
+      name: 'CreateWithId',
+      component: DesignView,
     },
     {
       path: '/dashboard',
@@ -68,6 +68,11 @@ const router = createRouter({
         {
           path: '',
           name: 'Dashboard',
+          component: UserTemplates,
+        },
+        {
+          path: 'designs',
+          name: 'Designs',
           component: DashboardArchive,
         },
         {
@@ -84,6 +89,11 @@ const router = createRouter({
           path: 'templates',
           name: 'Templates',
           component: DashboardNew,
+        },
+        {
+          path: 'feedback',
+          name: 'Feedback',
+          component: FeedbackPage,
         },
       ],
     },

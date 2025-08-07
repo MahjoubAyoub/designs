@@ -9,7 +9,10 @@ export default new EntitySchema({
     description: { type: 'text', nullable: true },
     content: { type: 'json', nullable: true }, // Store template design data as JSON
     category: { type: 'varchar', nullable: true },
+    type: { type: 'varchar', default: 'design' }, // 'design' or 'json-resume'
+    theme: { type: 'varchar', nullable: true }, // For JSON Resume themes
     public: { type: 'boolean', default: true },
+    preview: { type: 'longtext', nullable: true }, // Preview image as data URL
     dateCreation: { type: 'datetime', createDate: true },
     dateModification: { type: 'datetime', updateDate: true },
   },

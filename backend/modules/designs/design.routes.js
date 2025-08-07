@@ -1,6 +1,6 @@
 import express from 'express';
 import { AppDataSource } from '../../config/data-source.js';
-import { getAllDesigns, createDesign, updateDesign, deleteDesign, getDesignById, setToPublic } from './design.controller.js';
+import { getAllDesigns, createDesign, updateDesign, deleteDesign, getDesignById, setToPublic, exportDesign, importDesign } from './design.controller.js';
 
 const router = express.Router();
 const designRepo = () => AppDataSource.getRepository('Design');
@@ -41,6 +41,18 @@ router.get('/test', (req, res) => res.send('Designs router is working!'));
 router.patch('/:id/public', async (req, res) => {
   const repo = designRepo();
   return setToPublic(req, res, repo);
+});
+
+// Export design as JSON
+router.get('/:id/export', async (req, res) => {
+  const repo = designRepo();
+  return exportDesign(req, res, repo);
+});
+
+// Import design from JSON
+router.post('/import', async (req, res) => {
+  const repo = designRepo();
+  return importDesign(req, res, repo);
 });
 
 export default router;

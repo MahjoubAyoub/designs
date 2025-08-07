@@ -1,6 +1,7 @@
 <script setup>
 import { ref, watch } from 'vue'
 import BaseInput from '@/components/atoms/BaseInput.vue'
+import BaseButton from '@/components/atoms/BaseButton.vue'
 
 const props = defineProps({
   name: {
@@ -35,7 +36,7 @@ function handleSave() {
   <header class="bg-white shadow-sm p-1 flex justify-between items-center">
     <router-link
       class="flex items-center mx-2 text-gray-600 hover:text-blue-600 focus:outline-none"
-      to="/dashboard"
+      to="/dashboard/designs"
       >Go Back</router-link
     >
     <BaseInput v-model="name" type="text" placeholder="Design Name" class="!w-auto mr-auto" />
@@ -43,6 +44,6 @@ function handleSave() {
       <label class="mr-2 font-medium">{{ isPublic ? 'Public' : 'Private' }}</label>
       <input type="checkbox" v-model="isPublic" class="form-checkbox h-5 w-5 text-blue-600" />
     </div>
-    <baseButton class="bg-blue-600 text-white px-4 py-2 rounded-lg" @click="handleSave"> Save Design </baseButton>
+    <BaseButton class="bg-blue-600 text-white px-4 py-2 rounded-lg" @click="handleSave">Save Design </BaseButton>
   </header>
 </template>

@@ -23,6 +23,14 @@ export default new EntitySchema({
       type: 'varchar',
       nullable: true,
     },
+    phone: {
+      type: 'varchar',
+      nullable: true,
+    },
+    gender: {
+      type: 'varchar',
+      nullable: true,
+    },
     role: {
       type: 'varchar',
       default: 'user',

@@ -22,7 +22,7 @@
       <div class="mt-8 gap-3 flex justify-center">
         <BaseButton
           reverse="true"
-          href="/dashboard"
+          href="/signup"
           class="bg-primary text-white text-14 font-medium border border-transparent rounded-full"
         >
           <BaseIcon name="Feather"></BaseIcon>

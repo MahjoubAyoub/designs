@@ -71,3 +71,24 @@ export async function deleteDesign(id) {
   if (!res.ok) throw new Error('Failed to delete design');
   return res.json();
 }
+
+// Export design as JSON
+export async function exportDesignAsJson(id) {
+  const res = await fetch(`${API_BASE}/${id}/export`, {
+    method: 'GET',
+    headers: { 'Content-Type': 'application/json' },
+  });
+  if (!res.ok) throw new Error('Failed to export design');
+  return res.json();
+}
+
+// Import design from JSON
+export async function importDesignFromJson(jsonData) {
+  const res = await fetch(`${API_BASE}/import`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(jsonData),
+  });
+  if (!res.ok) throw new Error('Failed to import design');
+  return res.json();
+}

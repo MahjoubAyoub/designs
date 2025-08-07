@@ -1,4 +1,7 @@
-<script setup></script>
+<script setup>
+import BaseIcon from '@/components/atoms/BaseIcon.vue';
+
+</script>
 
 <template>
   <!-- Breadcrumb -->
@@ -91,17 +94,97 @@
         >
           <ul class="flex flex-col space-y-1">
             <li>
-              <router-link to="/dashboard" class="hover:text-blue-600">My Templates</router-link>
+              <router-link
+                to="/dashboard/designs"
+                class="flex items-center gap-x-3.5 py-2 px-2.5 text-sm text-neutral-700 rounded-lg hover:bg-gray-100 dark:bg-neutral-800 dark:text-neutral-400 dark:hover:text-neutral-300 dark:focus:outline-none dark:focus:ring-1 dark:focus:ring-neutral-600"
+                active-class="bg-gray-100 dark:bg-neutral-700"
+              >
+                <svg
+                  class="flex-shrink-0 size-4"
+                  xmlns="http://www.w3.org/2000/svg"
+                  width="24"
+                  height="24"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  stroke-width="2"
+                  stroke-linecap="round"
+                  stroke-linejoin="round"
+                >
+                  <rect width="18" height="18" x="3" y="3" rx="2" ry="2"/>
+                  <circle cx="9" cy="9" r="2"/>
+                  <path d="m21 15-3.086-3.086a2 2 0 0 0-2.828 0L6 21"/>
+                </svg>
+                My Designs
+              </router-link>
+            </li>
+             <li>
+              <router-link
+                to="/dashboard/public"
+                class="flex items-center gap-x-3.5 py-2 px-2.5 text-sm text-neutral-700 rounded-lg hover:bg-gray-100 dark:bg-neutral-800 dark:text-neutral-400 dark:hover:text-neutral-300 dark:focus:outline-none dark:focus:ring-1 dark:focus:ring-neutral-600"
+                active-class="bg-gray-100 dark:bg-neutral-700"
+              >
+                <svg
+                  class="flex-shrink-0 size-4"
+                  xmlns="http://www.w3.org/2000/svg"
+                  width="24"
+                  height="24"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  stroke-width="2"
+                  stroke-linecap="round"
+                  stroke-linejoin="round"
+                >
+                  <path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/>
+                  <circle cx="9" cy="7" r="4"/>
+                  <path d="m22 21-3-3m0 0a5.5 5.5 0 1 0-7.78-7.78 5.5 5.5 0 0 0 7.78 7.78Z"/>
+                </svg>
+                Public Designs
+              </router-link>
             </li>
             <li>
-              <router-link to="/dashboard/public" class="hover:text-blue-600"
-                >Public Templates</router-link
+              <router-link
+                to="/dashboard"
+                class="flex items-center gap-x-3.5 py-2 px-2.5 text-sm text-neutral-700 rounded-lg hover:bg-gray-100 dark:bg-neutral-800 dark:text-neutral-400 dark:hover:text-neutral-300 dark:focus:outline-none dark:focus:ring-1 dark:focus:ring-neutral-600"
+                active-class="bg-gray-100 dark:bg-neutral-700"
               >
+                <BaseIcon name="LayoutTemplate"/>
+                Templates
+              </router-link>
             </li>
             <li>
-              <router-link to="/dashboard/settings" class="hover:text-blue-600"
-                >My Settings</router-link
+              <router-link
+                to="/dashboard/settings"
+                class="flex items-center gap-x-3.5 py-2 px-2.5 text-sm text-neutral-700 rounded-lg hover:bg-gray-100 dark:bg-neutral-800 dark:text-neutral-400 dark:hover:text-neutral-300 dark:focus:outline-none dark:focus:ring-1 dark:focus:ring-neutral-600"
+                active-class="bg-gray-100 dark:bg-neutral-700"
               >
+                <BaseIcon name="Settings"/>
+                My Settings
+              </router-link>
+            </li>
+            <li>
+              <router-link
+                to="/dashboard/feedback"
+                class="flex items-center gap-x-3.5 py-2 px-2.5 text-sm text-neutral-700 rounded-lg hover:bg-gray-100 dark:bg-neutral-800 dark:text-neutral-400 dark:hover:text-neutral-300 dark:focus:outline-none dark:focus:ring-1 dark:focus:ring-neutral-600"
+                active-class="bg-gray-100 dark:bg-neutral-700"
+              >
+                <svg
+                  class="flex-shrink-0 size-4"
+                  xmlns="http://www.w3.org/2000/svg"
+                  width="24"
+                  height="24"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  stroke-width="2"
+                  stroke-linecap="round"
+                  stroke-linejoin="round"
+                >
+                  <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/>
+                </svg>
+                Feedback
+              </router-link>
             </li>
           </ul>
         </nav>

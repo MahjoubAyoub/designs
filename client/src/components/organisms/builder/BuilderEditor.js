@@ -21,7 +21,7 @@ import { MediaSection } from './BuilderMedia'
 import { AiGeneratorSection } from './BuilderAI'
 
 // Accept width and height as props (from BuilderLayout) and storeRef for parent access
-const PolotnoEditor = ({ width = 1024, height = 1024, storeRef, onAutoSave, initialData } = {}) => {
+const PolotnoEditor = ({ width = 1024, height = 1024, storeRef, onAutoSave, initialData, designId } = {}) => {
   const store = createStore({
     key: 'nFA5H9elEytDyPyvKL7T',
     showCredit: true,
@@ -87,7 +87,9 @@ const PolotnoEditor = ({ width = 1024, height = 1024, storeRef, onAutoSave, init
         [
           React.createElement(Toolbar, {
             store,
-            components: { ActionControls: CustomDownloadButton },
+            components: { 
+              ActionControls: (props) => React.createElement(CustomDownloadButton, { ...props, designId })
+            },
             key: 'toolbar',
           }),
           React.createElement(Workspace, {

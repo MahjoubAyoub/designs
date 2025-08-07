@@ -7,5 +7,12 @@
     "backend": "npm --prefix backend start",
     "client": "npm --prefix client run dev",
     "start": "concurrently --raw \"npm run client\" \"npm run backend\""
+  },
+  "dependencies": {
+    "canvas": "^3.1.2",
+    "concurrently": "^9.2.0",
+    "jsdom": "^26.1.0",
+    "jsonresume-theme-modern": "^0.0.18",
+    "pptxgenjs": "^4.0.1"
   }
 }
