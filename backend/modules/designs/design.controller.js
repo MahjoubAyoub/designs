@@ -99,11 +99,24 @@ export const getDesignById = async (req, res, repo) => {
     if (design.data && typeof design.data === 'string') {
       try {
         design.data = JSON.parse(design.data);
+        console.log(`🔍 Design ${id} data parsed successfully:`, {
+          hasPages: !!design.data.pages,
+          pagesCount: design.data.pages?.length || 0,
+          hasChildren: !!(design.data.pages?.[0]?.children),
+          childrenCount: design.data.pages?.[0]?.children?.length || 0,
+          dataKeys: Object.keys(design.data)
+        });
       } catch (parseError) {
         console.error('Failed to parse design data JSON:', parseError);
         design.data = {};
       }
     }
+    
+    console.log(`📤 Sending design ${id} to frontend with data structure:`, {
+      hasData: !!design.data,
+      dataType: typeof design.data,
+      dataKeys: design.data ? Object.keys(design.data) : []
+    });
     
     return res.status(200).json(design);
   } catch (error) {

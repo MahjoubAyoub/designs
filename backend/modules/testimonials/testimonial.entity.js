@@ -1,15 +1,16 @@
 import { EntitySchema } from 'typeorm';
 
 export default new EntitySchema({
-  name: 'Template',
-  tableName: 'templates',
+  name: 'Testimonial',
+  tableName: 'testimonials',
   columns: {
     id: { primary: true, type: 'int', generated: true },
     name: { type: 'varchar' },
-    description: { type: 'text', nullable: true },
-    content: { type: 'json', nullable: true }, // Store template design data as JSON
-    category: { type: 'varchar', nullable: true },
-    public: { type: 'boolean', default: true },
+    email: { type: 'varchar', nullable: true },
+    message: { type: 'text' },
+    jobTitle: { type: 'varchar', nullable: true },
+    company: { type: 'varchar', nullable: true },
+    isApproved: { type: 'boolean', default: false },
     dateCreation: { type: 'datetime', createDate: true },
     dateModification: { type: 'datetime', updateDate: true },
   },
@@ -18,6 +19,7 @@ export default new EntitySchema({
       type: 'many-to-one',
       target: 'User',
       joinColumn: true,
-    },
-  },
+      nullable: true,
+    }
+  }
 });

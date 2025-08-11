@@ -1,12 +1,15 @@
 <script setup>
 import { ref } from 'vue'
 import { sendContactMessage } from '@/api/contact.js'
+import { createTestimonial, deleteTestimonialsWithNullUserId } from '@/api/testimonials.js'
 import BaseButton from '@/components/atoms/BaseButton.vue'
 
 // Form data
 const feedbackData = ref({
   name: '',
   email: '',
+  jobTitle: '',
+  company: '',
   feedback: ''
 })
 
@@ -14,6 +17,7 @@ const feedbackData = ref({
 const isSubmitting = ref(false)
 const submitStatus = ref(null) // 'success', 'error', or null
 const errorMessage = ref('')
+
 
 // Load user data from localStorage
 const loadUserData = () => {
@@ -68,11 +72,31 @@ const handleSubmit = async () => {
     // Send to backend using existing contact API
     await sendContactMessage(contactData)
     
+    // Also create a testimonial entry (initially not approved)
+    const testimonialData = {
+      name: feedbackData.value.name,
+      email: feedbackData.value.email,
+      message: feedbackData.value.feedback,
+      jobTitle: feedbackData.value.jobTitle,
+      company: feedbackData.value.company,
+      isApproved: true
+    }
+    
+    try {
+      await createTestimonial(testimonialData)
+      console.log('Testimonial created successfully')
+    } catch (testimonialError) {
+      console.warn('Failed to create testimonial:', testimonialError)
+      // Don't fail the whole process if testimonial creation fails
+    }
+    
     // Success
     submitStatus.value = 'success'
     
-    // Reset feedback field only
+    // Reset form fields (keep name and email for convenience)
     feedbackData.value.feedback = ''
+    feedbackData.value.jobTitle = ''
+    feedbackData.value.company = ''
     
   } catch (error) {
     console.error('Feedback form error:', error)
@@ -82,6 +106,7 @@ const handleSubmit = async () => {
     isSubmitting.value = false
   }
 }
+
 </script>
 
 <template>
@@ -151,6 +176,36 @@ const handleSubmit = async () => {
           />
         </div>
         
+        <!-- Job Title Field -->
+        <div>
+          <label for="feedback-job-title" class="block text-sm font-medium text-gray-700 mb-2">
+            Job Title
+          </label>
+          <input
+            id="feedback-job-title"
+            v-model="feedbackData.jobTitle"
+            type="text"
+            :disabled="isSubmitting"
+            class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+            placeholder="Enter your job title (optional)"
+          />
+        </div>
+        
+        <!-- Company Field -->
+        <div>
+          <label for="feedback-company" class="block text-sm font-medium text-gray-700 mb-2">
+            Company
+          </label>
+          <input
+            id="feedback-company"
+            v-model="feedbackData.company"
+            type="text"
+            :disabled="isSubmitting"
+            class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+            placeholder="Enter your company (optional)"
+          />
+        </div>
+        
         <!-- Feedback Field -->
         <div>
           <label for="feedback-message" class="block text-sm font-medium text-gray-700 mb-2">
@@ -185,8 +240,6 @@ const handleSubmit = async () => {
           </BaseButton>
         </div>
       </form>
-    </div>
-    
     <!-- Additional Info -->
     <div class="mt-8 p-4 bg-blue-50 rounded-lg border border-blue-200">
       <div class="flex items-start">
@@ -203,4 +256,5 @@ const handleSubmit = async () => {
       </div>
     </div>
   </div>
+</div>
 </template>

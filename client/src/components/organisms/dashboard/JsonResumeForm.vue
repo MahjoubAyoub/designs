@@ -975,18 +975,7 @@ async function createResumeDesign() {
                'bg-white': selectedTheme === 'minimal'
              }"
              style="height: 842px; width: 595px; transform: scale(0.7); transform-origin: top center;">
-          
-          <!-- Theme Header Bar -->
-          <div class="absolute top-0 left-0 w-full h-8 flex items-center px-4"
-               :class="{
-                 'bg-blue-500': selectedTheme === 'modern',
-                 'bg-purple-500': selectedTheme === 'elegant',
-                 'bg-gray-700': selectedTheme === 'classic',
-                 'bg-black': selectedTheme === 'minimal'
-               }">
-            <div class="text-white text-xs font-medium">{{ selectedTheme.toUpperCase() }} THEME</div>
-          </div>
-          
+                   
           <!-- Profile Image Preview -->
           <div v-if="profileImageUrl" class="absolute rounded cursor-grab select-none overflow-hidden" 
                 :class="{

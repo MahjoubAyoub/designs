@@ -1,7 +1,38 @@
 import nodemailer from 'nodemailer';
 
 // In-memory storage for feedback (in production, use a database)
-let feedbackStorage = [];
+let feedbackStorage = [
+  {
+    id: 1,
+    name: 'Sarah Johnson',
+    email: 'sarah.johnson@techcorp.com',
+    message: 'The design tools are incredibly intuitive and have streamlined our entire creative workflow. Our team productivity has increased by 40% since we started using this platform.',
+    isTestimonial: true,
+    createdAt: new Date('2024-01-15'),
+    jobTitle: 'Creative Director',
+    company: 'TechCorp Solutions'
+  },
+  {
+    id: 2,
+    name: 'Michael Chen',
+    email: 'michael.chen@designstudio.com',
+    message: 'Outstanding platform! The collaborative features and real-time editing capabilities have revolutionized how our design team works together on projects.',
+    isTestimonial: true,
+    createdAt: new Date('2024-01-10'),
+    jobTitle: 'Lead Designer',
+    company: 'Creative Design Studio'
+  },
+  {
+    id: 3,
+    name: 'Emily Rodriguez',
+    email: 'emily.rodriguez@startup.io',
+    message: 'As a startup, we needed professional design tools that wouldn\'t break the bank. This platform delivers enterprise-level features at an affordable price point.',
+    isTestimonial: true,
+    createdAt: new Date('2024-01-05'),
+    jobTitle: 'Marketing Manager',
+    company: 'InnovateTech Startup'
+  }
+];
 
 export const sendContactEmail = async ({ name, email, message }) => {
   // Store feedback in memory (extract job title and company if it's dashboard feedback)

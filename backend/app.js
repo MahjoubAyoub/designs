@@ -9,6 +9,7 @@ import designRoutes from './modules/designs/design.routes.js';
 import userRoutes from './modules/users/user.routes.js'
 import templateRouter from './modules/templates/template.routes.js';
 import contactRouter from './modules/contact/contact.routes.js';
+import testimonialRouter from './modules/testimonials/testimonial.routes.js';
 import cors from 'cors';
 
 const app = express();
@@ -32,5 +33,6 @@ app.use('/api/designs', designRoutes);
 app.use('/api/users',userRoutes)
 app.use('/api/contact', contactRouter);
 app.use('/api/templates', templateRouter);
+app.use('/api/testimonials', testimonialRouter);
 
 export default app;

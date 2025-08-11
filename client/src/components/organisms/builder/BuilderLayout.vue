@@ -51,6 +51,48 @@ let polotnoStore = null
 let designId = null // Track the current design id for updates
 const designData = ref(null) // Store the current design data for JsonResumeEditor
 
+// Data sanitization utility to fix null values in Polotno data
+function sanitizePolotnoData(data) {
+  if (!data || typeof data !== 'object') return data;
+  
+  // Deep clone to avoid mutating original data
+  const sanitized = JSON.parse(JSON.stringify(data));
+  
+  // Sanitize pages and their children
+  if (sanitized.pages && Array.isArray(sanitized.pages)) {
+    sanitized.pages.forEach(page => {
+      if (page.children && Array.isArray(page.children)) {
+        page.children.forEach(child => {
+          // Fix common null value issues
+          if (child.text === null || child.text === undefined) {
+            child.text = '';
+          }
+          if (child.fontFamily === null || child.fontFamily === undefined) {
+            child.fontFamily = 'Arial';
+          }
+          if (child.fill === null || child.fill === undefined) {
+            child.fill = '#000000';
+          }
+          if (child.src === null || child.src === undefined) {
+            delete child.src; // Remove null src properties
+          }
+          // Ensure numeric properties are numbers, not null
+          ['x', 'y', 'width', 'height', 'fontSize', 'rotation', 'scaleX', 'scaleY'].forEach(prop => {
+            if (child[prop] === null || child[prop] === undefined || isNaN(child[prop])) {
+              if (prop === 'fontSize') child[prop] = 16;
+              else if (['scaleX', 'scaleY'].includes(prop)) child[prop] = 1;
+              else if (prop === 'rotation') child[prop] = 0;
+              else child[prop] = child[prop] || 0;
+            }
+          });
+        });
+      }
+    });
+  }
+  
+  return sanitized;
+}
+
 // Image compression utility for large payloads
 function compressImageInElements(elements, maxWidth = 200, maxHeight = 200, quality = 0.5) {
   return elements.map(element => {
@@ -110,10 +152,13 @@ function compressImageInElements(elements, maxWidth = 200, maxHeight = 200, qual
 // Save Design button handler: sends JSON to backend /api/designs/save
 async function saveDesignHandler() {
   if (!polotnoStore) return;
-  console.log('Saving design with name:', designName.value);
+  console.log('💾 Manual save triggered for design:', designName.value);
   
   try {
     const json = polotnoStore.toJSON();
+    console.log('💾 Manual save - polotno JSON:', json);
+    console.log('💾 Manual save - JSON structure:', JSON.stringify(json, null, 2));
+    
     const user = JSON.parse(localStorage.getItem('user') || '{}');
     
     // Prepare the data for saving
@@ -263,6 +308,18 @@ async function saveDesignHandler() {
 
 // Autosave handler: also uses /api/designs/save
 async function autoSaveDesign(json) {
+  console.log('🔄 AutoSave triggered with data:', json);
+  console.log('🔄 JSON structure:', JSON.stringify(json, null, 2));
+  
+  // Check if we have actual content to save
+  const hasContent = json && json.pages && json.pages[0] && json.pages[0].children && json.pages[0].children.length > 0;
+  console.log('🔄 Has content to save:', hasContent);
+  
+  if (!hasContent) {
+    console.log('⚠️ No content to save, skipping autosave');
+    return;
+  }
+  
   const user = JSON.parse(localStorage.getItem('user') || '{}');
   
   // Prepare the data for saving
@@ -283,6 +340,8 @@ async function autoSaveDesign(json) {
     data: dataToSave,
     userId: user.id,
   };
+  
+  console.log('💾 Saving payload:', JSON.stringify(payload, null, 2));
   
   const res = await saveDesign(payload);
   if (res && res.data && res.data.id) {
@@ -478,7 +537,43 @@ onMounted(async () => {
           }, 500);
         } else {
           // Regular design data
-          polotnoStore.loadJSON(parsedData);
+          console.log('🔄 Loading regular design data:', parsedData);
+          console.log('🔄 Data structure:', {
+            hasPages: !!parsedData.pages,
+            pagesCount: parsedData.pages?.length || 0,
+            hasChildren: !!(parsedData.pages?.[0]?.children),
+            childrenCount: parsedData.pages?.[0]?.children?.length || 0,
+            dataKeys: Object.keys(parsedData)
+          });
+          
+          // Sanitize data before loading to fix null values
+          const sanitizedData = sanitizePolotnoData(parsedData);
+          console.log('🧹 Sanitized data:', sanitizedData);
+          polotnoStore.loadJSON(sanitizedData);
+          
+          // Add debugging to check if data was loaded correctly
+           setTimeout(() => {
+             console.log('🔍 After loading regular design:');
+             console.log('Store pages:', polotnoStore.pages.length);
+             console.log('Active page elements:', polotnoStore.activePage?.children?.length || 0);
+             if (polotnoStore.activePage && polotnoStore.activePage.children.length > 0) {
+               console.log('Elements loaded successfully:', polotnoStore.activePage.children.map(child => ({
+                 type: child.type,
+                 text: child.text || child.src || 'no text/src',
+                 x: child.x,
+                 y: child.y
+               })));
+               // Test the toJSON method to see what it returns
+               const testJson = polotnoStore.toJSON();
+               console.log('🧪 Test toJSON result:', testJson);
+               console.log('🧪 Test toJSON children count:', testJson.pages?.[0]?.children?.length || 0);
+             } else {
+               console.warn('⚠️ No elements found in active page after loading!');
+               // Still test toJSON even if no elements visible
+               const testJson = polotnoStore.toJSON();
+               console.log('🧪 Test toJSON result (no elements):', testJson);
+             }
+           }, 1000);
         }
         
         designName.value = design.name || 'Untitled Design';

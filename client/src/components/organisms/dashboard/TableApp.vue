@@ -11,14 +11,7 @@
         />
       </div>
       <div class="flex space-x-2">
-        <button
-          v-if="designs.some(d => !d.imageUrl)"
-          @click="generateMissingPreviews"
-          :disabled="generatingPreviews"
-          class="bg-green-600 text-white px-4 py-2 rounded hover:bg-green-700 disabled:opacity-50 disabled:cursor-not-allowed"
-        >
-          {{ generatingPreviews ? 'Generating...' : 'Generate Previews' }}
-        </button>
+       
         <BaseButton
           class="bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700"
           href="/dashboard/templates"
@@ -27,20 +20,7 @@
         </BaseButton>
       </div>
     </div>
-
-    <!-- Preview Generation Progress -->
-    <div v-if="generatingPreviews" class="bg-blue-50 border border-blue-200 rounded-lg p-4">
-      <div class="flex items-center space-x-2">
-        <div class="animate-spin rounded-full h-4 w-4 border-b-2 border-blue-600"></div>
-        <span class="text-blue-800">Generating previews... ({{ previewProgress.current }}/{{ previewProgress.total }})</span>
-      </div>
-      <div class="mt-2 w-full bg-blue-200 rounded-full h-2">
-        <div 
-          class="bg-blue-600 h-2 rounded-full transition-all duration-300"
-          :style="{ width: `${(previewProgress.current / previewProgress.total) * 100}%` }"
-        ></div>
-      </div>
-    </div>
+   
 
     <!-- Data Table -->
     <div class="overflow-x-auto">
@@ -101,7 +81,7 @@ import { ref, computed, onMounted } from 'vue'
 import EasyDataTable from 'vue3-easy-data-table'
 import BaseButton from '@/components/atoms/BaseButton.vue'
 import { getAllDesigns, deleteDesign, saveDesign } from '@/api/designs.js'
-import { generateDesignPreview } from '@/services/generate-canvas-previews.js'
+import { generateVitePreviewById } from '@/services/vitePreviewService.js'
 
 const headers = [
   { text: 'Design Name', value: 'name' },
@@ -154,8 +134,8 @@ async function generateMissingPreviews() {
       try {
         console.log(`Generating preview for design: ${design.name}`)
         
-        // Generate preview using the service
-        const previewDataUrl = generateDesignPreview(design.data, 400, 300)
+        // Generate preview using the Vite service with design ID
+        const previewDataUrl = await generateVitePreviewById(design.id, 400, 300)
         
         if (previewDataUrl) {
           // Update the design with the new preview

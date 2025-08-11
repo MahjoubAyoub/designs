@@ -33,7 +33,7 @@ const handleLogin = async () => {
     if (data.user) {
       localStorage.setItem('user', JSON.stringify(data.user));
     }
-    router.push('/dashboard');
+    router.push('/dashboard/designs');
   } catch (err) {
     error.value = err.message;
     console.error('Login error:', err);

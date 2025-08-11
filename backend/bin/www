@@ -4,6 +4,8 @@ import http from 'http';
 import debugLib from 'debug';
 import app from '../app.js';
 import {AppDataSource} from '../config/data-source.js';
+import { initializeSampleTemplates } from '../modules/templates/template.service.js';
+import { initializeSampleTestimonials } from '../modules/testimonials/testimonial.service.js';
 
 const debug = debugLib('backend:server');
 
@@ -18,16 +20,22 @@ app.set('port', port);
  */
 const server = http.createServer(app);
 
-// Init TypeORM, then listen
+// Initialize TypeORM
 AppDataSource.initialize()
   .then(() => {
+    console.log('✅ TypeORM initialized successfully');
+    // Initialize sample templates and testimonials
+    initializeSampleTemplates();
+    initializeSampleTestimonials();
     server.listen(port);
     server.on('error', onError);
     server.on('listening', onListening);
     console.log('✅ Server started with TypeORM at port', port);
   })
-  .catch((err) => {
-    console.error('❌ TypeORM init failed:', err);
+  .catch((error) => {
+    console.error('❌ TypeORM initialization failed:', error);
+    // Make TypeORM initialization optional
+    console.log('⚠️ Continuing without database...');
   });
 
 /**

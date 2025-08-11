@@ -77,7 +77,7 @@ const autoLogin = async (email, password) => {
     }
     console.log('JWT Token:', data.token); // Log token for debugging
     // Redirect to a protected route (e.g., dashboard)
-    router.push('/dashboard');
+    router.push('/dashboard/designs');
   } catch (err) {
     error.value = err.message;
     console.error('Login error:', err);

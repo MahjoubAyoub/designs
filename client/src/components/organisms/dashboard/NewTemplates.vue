@@ -190,38 +190,14 @@
                    @click="useTemplate(template)"
                  >
                    <div class="flex flex-col h-full">
-                     <!-- Template Preview -->
+                     <!-- Template Canvas Preview -->
                      <div class="w-full h-32 mb-3 rounded-lg overflow-hidden border-2 border-gray-200 relative">
-                       <!-- Loading indicator for preview generation -->
-                       <div 
-                         v-if="generatingPreviewFor === template.id"
-                         class="absolute inset-0 bg-white bg-opacity-80 flex items-center justify-center z-10"
-                       >
-                         <div class="text-center">
-                           <div class="inline-block animate-spin rounded-full h-6 w-6 border-b-2 border-blue-600 mb-2"></div>
-                           <p class="text-xs text-gray-600">Generating...</p>
-                         </div>
-                       </div>
-                       
-                       <img 
-                         v-if="template.preview && template.preview !== ''"
-                         :src="template.preview" 
-                         :alt="template.name + ' preview'" 
+                       <canvas 
+                         :ref="`templateCanvas-${template.id}`"
                          class="w-full h-full object-cover"
-                         @error="handleImageError"
-                       />
-                       <div 
-                         v-else 
-                         class="w-full h-full bg-gray-100 flex items-center justify-center text-gray-400 cursor-pointer"
-                         @click.stop="generateSingleTemplatePreview(template)"
-                       >
-                         <div class="text-center">
-                           <svg class="w-8 h-8 mx-auto mb-2" fill="currentColor" viewBox="0 0 20 20">
-                             <path fill-rule="evenodd" d="M4 3a2 2 0 00-2 2v10a2 2 0 002 2h12a2 2 0 002-2V5a2 2 0 00-2-2H4zm12 12H4l4-8 3 6 2-4 3 6z" clip-rule="evenodd" />
-                           </svg>
-                           <span class="text-xs">Click to generate preview</span>
-                         </div>
-                       </div>
+                         width="300"
+                         height="128"
+                       ></canvas>
                      </div>
                      
                      <!-- Template Info -->
@@ -293,13 +269,6 @@
                   <div class="flex flex-col items-center">
                     <!-- Preview Image -->
                     <div class="w-24 h-24 mb-3 rounded-lg overflow-hidden border-2 border-gray-200 relative">
-                      <!-- Loading indicator -->
-                      <div 
-                        v-if="generatingPreviewFor === design.id"
-                        class="absolute inset-0 bg-white bg-opacity-80 flex items-center justify-center z-10"
-                      >
-                        <div class="inline-block animate-spin rounded-full h-4 w-4 border-b-2 border-blue-600"></div>
-                      </div>
                       
                       <img 
                         v-if="design.imageUrl && design.imageUrl !== ''"
@@ -357,7 +326,7 @@ import InputBox from '@/components/molecules/InputBox.vue'
 import BaseButton from '@/components/atoms/BaseButton.vue'
 import { createTemplate, getAllTemplates, updateTemplate } from '@/api/templates.js'
 import { importTemplate, createDesignFromTemplate } from '@/services/templateService.js'
-import { generateDesignPreview, generateTemplatePreview } from '@/services/generate-canvas-previews.js'
+import { generateVitePreviewById, generateVitePreview } from '@/services/vitePreviewService.js'
 import JsonResumeForm from './JsonResumeForm.vue'
 
 // Reactive state for form data
@@ -374,7 +343,6 @@ const isLoadingTemplates = ref(false)
 const templatesError = ref(null)
 const router = useRouter()
 const fileInput = ref(null)
-const generatingPreviewFor = ref(null)
 const generatingPublicPreviews = ref(false)
 
 // Predefined canvas sizes
@@ -405,32 +373,10 @@ function handleSubmit() {
 }
 
 // Generate preview for a single template
-async function generateSingleTemplatePreview(template) {
-  generatingPreviewFor.value = template.id
-  
-  try {
-    const previewDataUrl = generateTemplatePreview(template, 400, 300)
-    
-    if (previewDataUrl) {
-      // Update template with preview
-      await updateTemplate(template.id, { preview: previewDataUrl })
-      template.preview = previewDataUrl
-      console.log(`✓ Preview generated for template: ${template.name}`)
-    }
-  } catch (error) {
-    console.error(`Error generating preview for template ${template.name}:`, error)
-    alert('Failed to generate preview. Please try again.')
-  } finally {
-    generatingPreviewFor.value = null
-  }
-}
-
-// Generate preview for a single design
+// Generate preview for a single design using design ID
 async function generateSingleDesignPreview(design) {
-  generatingPreviewFor.value = design.id
-  
   try {
-    const previewDataUrl = generateDesignPreview(design.data, 400, 300)
+    const previewDataUrl = await generateVitePreviewById(design.id, 400, 300)
     
     if (previewDataUrl) {
       // Update design with preview
@@ -450,8 +396,6 @@ async function generateSingleDesignPreview(design) {
   } catch (error) {
     console.error(`Error generating preview for design ${design.name}:`, error)
     alert('Failed to generate preview. Please try again.')
-  } finally {
-    generatingPreviewFor.value = null
   }
 }
 
@@ -596,11 +540,12 @@ async function handleImport(event) {
     templateData.userId = user.id
     
     // Create the template
-    const createdTemplate = await createTemplate(templateData)
+    const response = await createTemplate(templateData)
     
     // Generate preview for the new template
-    if (createdTemplate) {
-      const previewDataUrl = generateTemplatePreview(createdTemplate, 400, 300)
+    if (response && response.data) {
+      const createdTemplate = response.data
+      const previewDataUrl = await generateVitePreview(createdTemplate, 400, 300)
       if (previewDataUrl) {
         await updateTemplate(createdTemplate.id, { preview: previewDataUrl })
       }
@@ -668,8 +613,119 @@ function formatDate(dateString) {
   return new Date(dateString).toLocaleDateString()
 }
 
+// Function to render template content directly to canvas
+function renderTemplateToCanvas(template) {
+  // Find canvas by the ref attribute
+  const canvas = document.querySelector(`canvas[ref="templateCanvas-${template.id}"]`)
+  
+  if (!canvas || !template.preview) return
+  
+  const ctx = canvas.getContext('2d')
+  const canvasWidth = 300
+  const canvasHeight = 128
+  
+  // Clear canvas
+  ctx.clearRect(0, 0, canvasWidth, canvasHeight)
+  
+  // Set background
+  ctx.fillStyle = '#ffffff'
+  ctx.fillRect(0, 0, canvasWidth, canvasHeight)
+  
+  // Get template dimensions
+  const templateWidth = template.preview.width || 794
+  const templateHeight = template.preview.height || 1123
+  
+  // Calculate scale to fit canvas
+  const scaleX = canvasWidth / templateWidth
+  const scaleY = canvasHeight / templateHeight
+  const scale = Math.min(scaleX, scaleY)
+  
+  // Center the content
+  const offsetX = (canvasWidth - templateWidth * scale) / 2
+  const offsetY = (canvasHeight - templateHeight * scale) / 2
+  
+  // Render elements
+  const elements = template.preview.polotnoElements || []
+  elements.forEach(element => {
+    renderElementToCanvas(ctx, element, scale, offsetX, offsetY)
+  })
+}
+
+// Function to render individual elements
+function renderElementToCanvas(ctx, element, scale, offsetX, offsetY) {
+  if (!element || !element.type) return
+  
+  const x = (element.x || 0) * scale + offsetX
+  const y = (element.y || 0) * scale + offsetY
+  const width = (element.width || 0) * scale
+  const height = (element.height || 0) * scale
+  
+  ctx.save()
+  
+  switch (element.type) {
+    case 'text':
+      ctx.fillStyle = element.fill || '#000000'
+      ctx.font = `${(element.fontSize || 14) * scale}px ${element.fontFamily || 'Arial'}`
+      ctx.textAlign = 'left'
+      ctx.textBaseline = 'top'
+      if (element.fontWeight === 'bold') {
+        ctx.font = `bold ${ctx.font}`
+      }
+      ctx.fillText(element.text || '', x, y)
+      break
+      
+    case 'rect':
+      ctx.fillStyle = element.fill || '#cccccc'
+      if (element.rx || element.ry) {
+        // Rounded rectangle
+        const radius = (element.rx || element.ry || 0) * scale
+        ctx.beginPath()
+        ctx.roundRect(x, y, width, height, radius)
+        ctx.fill()
+      } else {
+        ctx.fillRect(x, y, width, height)
+      }
+      break
+      
+    case 'circle':
+      ctx.fillStyle = element.fill || '#cccccc'
+      ctx.beginPath()
+      ctx.arc(x + width/2, y + height/2, Math.min(width, height)/2, 0, 2 * Math.PI)
+      ctx.fill()
+      break
+      
+    case 'line':
+      ctx.strokeStyle = element.stroke || element.fill || '#000000'
+      ctx.lineWidth = (element.strokeWidth || 1) * scale
+      ctx.beginPath()
+      ctx.moveTo(x, y)
+      ctx.lineTo(x + width, y + height)
+      ctx.stroke()
+      break
+      
+    default:
+      // Generic element - draw as rectangle
+      ctx.fillStyle = element.fill || '#e5e7eb'
+      ctx.fillRect(x, y, width, height)
+      break
+  }
+  
+  ctx.restore()
+}
+
+// Function to render all templates after they're loaded
+function renderAllTemplates() {
+  setTimeout(() => {
+    userTemplates.value.forEach(template => {
+      renderTemplateToCanvas(template)
+    })
+  }, 100) // Small delay to ensure DOM is updated
+}
+
 onMounted(() => {
   fetchPublicDesigns()
-  fetchUserTemplates()
+  fetchUserTemplates().then(() => {
+    renderAllTemplates()
+  })
 })
 </script>
