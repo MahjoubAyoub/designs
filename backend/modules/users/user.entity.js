@@ -18,6 +18,12 @@ export default new EntitySchema({
     },
     password: {
       type: 'varchar',
+      nullable: true,
+    },
+    googleId: {
+      type: 'varchar',
+      nullable: true,
+      unique: true,
     },
     photoProfil: {
       type: 'varchar',

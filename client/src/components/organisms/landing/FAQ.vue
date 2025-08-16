@@ -16,21 +16,17 @@ import Collapse from '@/components/molecules/collapseBox.vue'
 
     <div class="max-w-2xl mx-auto">
       <div class="hs-accordion-group">
-        <Collapse title="Can I cancel at anytime?">
-          Yes, you can cancel anytime no questions are asked while you cancel but we would highly
-          appreciate if you will give us some feedback.
+        <Collapse title="What is Designih?">
+          Designih is an easy-to-use online design platform that lets you create, customize, and manage professional designs without needing advanced design skills.
         </Collapse>
-        <Collapse title="My team has credits. How do we use them?">
-          Once your team signs up for a subscription plan. This is where we sit down, grab a cup of
-          coffee and dial in the details.
+        <Collapse title="Do I need to install anything to use Designih?">
+           No. Designih works directly in your browser — no downloads or installations required.
         </Collapse>
-        <Collapse title="How does Preline's pricing work?">
-          Our subscriptions are tiered. Understanding the task at hand and ironing out the wrinkles
-          is key.
+        <Collapse title="Can I save and edit my designs later?">
+          Yes. Your designs are saved in your account so you can revisit, edit, and update them anytime.
         </Collapse>
-        <Collapse title="How secure is Preline?">
-          Protecting the data you trust to Preline is our first priority. This part is really
-          crucial in keeping the project in line to completion.
+        <Collapse title="Is my work saved automatically?">
+          Yes. Designih automatically saves your progress in real time, so you never have to worry about losing your work. You can close your browser or switch devices and pick up right where you left off.
         </Collapse>
       </div>
     </div>

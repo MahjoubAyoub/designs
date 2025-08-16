@@ -7,7 +7,7 @@
       <div class="inline-block animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
       <p class="mt-2">Loading public designs...</p>
     </div>
-    
+
     <!-- Error State -->
     <div v-else-if="error" class="text-center text-red-500 py-10">
       <p>{{ error }}</p>
@@ -15,7 +15,7 @@
         Try Again
       </button>
     </div>
-    
+
     <!-- Grid -->
     <div v-else-if="publicDesigns.length > 0" class="grid sm:grid-cols-2 lg:grid-cols-3 gap-6">
       <div v-for="design in publicDesigns" :key="design.id" class="group flex flex-col h-full bg-white border border-gray-200 shadow-2xs rounded-xl">
@@ -51,7 +51,7 @@
 <script setup>
 import { ref, onMounted } from 'vue'
 import { getPublicDesigns } from '@/api/designs.js'
-import { generateVitePreview, generateVitePreviewById, generateBatchPreviews } from '@/services/vitePreviewService.js'
+import { generatePolotnoPreviewFromData, generatePolotnoPreviewById, generateBatchPolotnopreviews } from '@/services/polotnoPreviewService.js'
 
 const publicDesigns = ref([])
 const isLoading = ref(true)
@@ -75,20 +75,20 @@ async function fetchPublicDesigns() {
 // Test function to debug preview generation using design ID
 async function testPreviewGeneration() {
   console.log('🧪 Testing Vite preview generation by design ID...')
-  
+
   if (publicDesigns.value.length === 0) {
     alert('No designs available to test!')
     return
   }
-  
+
   const testDesign = publicDesigns.value[0]
   console.log('🎯 Testing with design ID:', testDesign.id)
-  
+
   try {
     // Test using design ID to fetch and render canvas elements
-    const previewDataUrl = await generateVitePreviewById(testDesign.id, 400, 300)
+    const previewDataUrl = await generatePolotnoPreviewById(testDesign.id, 400, 300)
     console.log('✅ Test preview generated successfully:', previewDataUrl ? 'Yes' : 'No')
-    
+
     if (previewDataUrl) {
       // Create a temporary image to show the result
       const img = new Image()
@@ -96,15 +96,15 @@ async function testPreviewGeneration() {
       img.style.border = '2px solid green'
       img.style.maxWidth = '200px'
       img.style.maxHeight = '150px'
-      
+
       // Show in a new window for testing
       const newWindow = window.open('', '_blank', 'width=400,height=300')
       newWindow.document.body.appendChild(img)
       newWindow.document.title = `Test Preview Result - Design ID: ${testDesign.id}`
-      
+
       // Also test the regular method for comparison
       console.log('🔄 Also testing with design data object...')
-      const previewDataUrl2 = await generateVitePreview(testDesign, 400, 300)
+      const previewDataUrl2 = await generatePolotnoPreviewFromData(testDesign, 400, 300)
       if (previewDataUrl2) {
         const img2 = new Image()
         img2.src = previewDataUrl2
@@ -124,24 +124,24 @@ async function testPreviewGeneration() {
 // Generate missing previews for designs that don't have them using design IDs
 async function generateMissingPreviews() {
   console.log('🔄 Starting batch preview generation using design IDs...')
-  
+
   const designsWithoutPreviews = publicDesigns.value.filter(design => !design.preview)
-  
+
   if (designsWithoutPreviews.length === 0) {
     alert('All designs already have previews!')
     return
   }
-  
+
   console.log(`📊 Found ${designsWithoutPreviews.length} designs without previews`)
-  
+
   try {
     let successCount = 0
-    
+
     for (const design of designsWithoutPreviews) {
       try {
         console.log(`🎨 Generating preview for design ID: ${design.id}`)
-        const previewDataUrl = await generateVitePreviewById(design.id, 400, 300)
-        
+        const previewDataUrl = await generatePolotnoPreviewById(design.id, 400, 300)
+
         if (previewDataUrl) {
           design.preview = previewDataUrl
           successCount++
@@ -153,7 +153,7 @@ async function generateMissingPreviews() {
         console.error(`❌ Failed to generate preview for design ${design.id}:`, error)
       }
     }
-    
+
     alert(`Generated ${successCount} previews successfully out of ${designsWithoutPreviews.length} designs!`)
   } catch (error) {
     console.error('❌ Batch preview generation failed:', error)

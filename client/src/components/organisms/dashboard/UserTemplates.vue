@@ -30,6 +30,21 @@
     
     <!-- Templates Grid -->
     <div v-else class="space-y-4">
+      <!-- Generate Previews Button -->
+      <div class="flex items-center justify-between mb-4">
+        <h3 class="text-md font-medium text-gray-800 dark:text-neutral-200">
+          Your Templates
+        </h3>
+        <button
+          v-if="userTemplates.some(t => !t.preview || t.preview === '')"
+          @click="generateMissingPreviews"
+          :disabled="generatingPreviews"
+          class="text-sm bg-blue-600 text-white px-3 py-1 rounded hover:bg-blue-700 disabled:opacity-50"
+        >
+          {{ generatingPreviews ? `Generating... (${previewProgress.current}/${previewProgress.total})` : 'Generate Missing Previews' }}
+        </button>
+      </div>
+      
       <div class="grid sm:grid-cols-2 lg:grid-cols-3 gap-4">
         <div 
           v-for="template in userTemplates" 
@@ -81,14 +96,17 @@
 <script setup>
 import { ref, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
-import { getAllTemplates} from '@/api/templates.js'
+import { getAllTemplates, updateTemplate } from '@/api/templates.js'
 import { createDesignFromTemplate } from '@/services/templateService.js'
 import { saveDesign } from '@/api/designs.js'
+import { generatePolotnoPreviewFromData } from '@/services/polotnoPreviewService.js'
 
 const router = useRouter()
 const userTemplates = ref([])
 const isLoading = ref(true)
 const error = ref(null)
+const generatingPreviews = ref(false)
+const previewProgress = ref({ current: 0, total: 0 })
 
 // Fetch user templates
 async function fetchUserTemplates() {
@@ -175,6 +193,66 @@ function formatDate(dateString) {
   return new Date(dateString).toLocaleDateString()
 }
 
+// Generate missing previews for templates
+async function generateMissingPreviews() {
+  const templatesWithoutPreviews = userTemplates.value.filter(t => !t.preview || t.preview === '')
+
+  if (templatesWithoutPreviews.length === 0) {
+    alert('All templates already have previews!')
+    return
+  }
+
+  generatingPreviews.value = true
+  previewProgress.value = { current: 0, total: templatesWithoutPreviews.length }
+
+  try {
+    for (const template of templatesWithoutPreviews) {
+      try {
+        console.log(`Generating preview for template: ${template.name}`)
+
+        // Generate preview using the frontend service with template data
+        const previewDataUrl = await generatePolotnoPreviewFromData(template, 400, 300)
+
+        if (previewDataUrl) {
+          // Update the template with the new preview
+          const updateData = {
+            id: template.id,
+            name: template.name,
+            description: template.description,
+            category: template.category,
+            content: template.content,
+            preview: previewDataUrl,
+            public: template.public
+          }
+
+          await updateTemplate(template.id, updateData)
+
+          // Update local data
+          template.preview = previewDataUrl
+
+          console.log(`✓ Preview generated for: ${template.name}`)
+        } else {
+          console.log(`⚠ Failed to generate preview for: ${template.name}`)
+        }
+      } catch (error) {
+        console.error(`Error generating preview for ${template.name}:`, error)
+      }
+
+      previewProgress.value.current++
+
+      // Add a small delay to prevent overwhelming the browser
+      await new Promise(resolve => setTimeout(resolve, 100))
+    }
+
+    alert('Preview generation completed!')
+  } catch (error) {
+    console.error('Error in batch preview generation:', error)
+    alert('Some previews failed to generate. Check console for details.')
+  } finally {
+    generatingPreviews.value = false
+    previewProgress.value = { current: 0, total: 0 }
+  }
+}
 
 onMounted(() => {
   fetchUserTemplates()

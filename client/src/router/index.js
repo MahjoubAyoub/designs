@@ -17,6 +17,11 @@ import UserTemplates from '@/components/organisms/dashboard/UserTemplates.vue'
 import FeedbackPage from '@/components/organisms/dashboard/FeedbackPage.vue'
 // Design
 import DesignView from '@/views/DesignView.vue'
+// Debug
+import DebugPreview from '@/views/DebugPreview.vue'
+import SimpleDebug from '@/views/SimpleDebug.vue'
+// OAuth
+import OAuthCallback from '@/components/OAuthCallback.vue'
 
 const router = createRouter({
   history: createWebHistory(import.meta.env.BASE_URL),
@@ -52,6 +57,11 @@ const router = createRouter({
       component: ForgetPassword,
     },
     {
+      path: '/auth/callback',
+      name: 'OAuthCallback',
+      component: OAuthCallback,
+    },
+    {
       path: '/create',
       name: 'Create',
       component: DesignView,
@@ -60,6 +70,16 @@ const router = createRouter({
       path: '/create/:id',
       name: 'CreateWithId',
       component: DesignView,
+    },
+    {
+      path: '/debug',
+      name: 'Debug',
+      component: DebugPreview,
+    },
+    {
+      path: '/simple-debug',
+      name: 'SimpleDebug',
+      component: SimpleDebug,
     },
     {
       path: '/dashboard',

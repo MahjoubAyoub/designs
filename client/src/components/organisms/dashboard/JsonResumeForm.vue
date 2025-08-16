@@ -2,10 +2,12 @@
 import { ref, reactive, onMounted, watch, onUnmounted } from 'vue';
 import { useRouter } from 'vue-router';
 import { convertJsonResumeToPolotno } from '@/utils/jsonResume.js';
-import { createJsonResumeTemplate } from '@/api/templates.js';
 import { saveDesign } from '@/api/designs.js';
 import BaseButton from '@/components/atoms/BaseButton.vue';
 import BaseInput from '@/components/atoms/BaseInput.vue';
+
+// Define emits
+const emit = defineEmits(['stylingChanged']);
 
 const router = useRouter();
 const isLoading = ref(false);
@@ -13,8 +15,39 @@ const error = ref(null);
 const currentStep = ref(1);
 const totalSteps = 5; // Added step for layout and styling
 
+// Theme data
+const availableThemes = ref([]);
+const themeTemplates = ref({});
+// Load theme templates
+async function loadThemeTemplates() {
+  try {
+    const themes = [
+      { id: 'modern', name: 'Modern', file: '/Modern.json' },
+      { id: 'minimal', name: 'Minimal', file: '/Minimalist.json' }
+    ];
+
+    availableThemes.value = themes;
+
+    // Load each theme template
+    for (const theme of themes) {
+      try {
+        const response = await fetch(theme.file);
+        if (response.ok) {
+          const templateData = await response.json();
+          themeTemplates.value[theme.id] = templateData;
+        } else {
+          console.error(`Failed to fetch theme ${theme.id}: ${response.status} ${response.statusText}`);
+        }
+      } catch (err) {
+        console.warn(`Failed to load theme ${theme.id}:`, err);
+      }
+    }
+  } catch (error) {
+    console.error('Error loading theme templates:', error);
+  }
+}
+
 // Image upload handling
-const profileImage = ref(null);
 const profileImageUrl = ref('');
 const imageInput = ref(null);
 
@@ -147,11 +180,11 @@ function compressImage(file, maxWidth = 300, maxHeight = 300, quality = 0.8) {
     const canvas = document.createElement('canvas');
     const ctx = canvas.getContext('2d');
     const img = new Image();
-    
+
     img.onload = () => {
       // Calculate new dimensions while maintaining aspect ratio
       let { width, height } = img;
-      
+
       if (width > height) {
         if (width > maxWidth) {
           height = (height * maxWidth) / width;
@@ -163,16 +196,16 @@ function compressImage(file, maxWidth = 300, maxHeight = 300, quality = 0.8) {
           height = maxHeight;
         }
       }
-      
+
       canvas.width = width;
       canvas.height = height;
-      
+
       // Draw and compress
       ctx.drawImage(img, 0, 0, width, height);
       const compressedDataUrl = canvas.toDataURL('image/jpeg', quality);
       resolve(compressedDataUrl);
     };
-    
+
     img.src = URL.createObjectURL(file);
   });
 }
@@ -181,11 +214,11 @@ function compressImage(file, maxWidth = 300, maxHeight = 300, quality = 0.8) {
 async function handleImageUpload(event) {
   const file = event.target.files[0];
   if (file) {
-    if (file.size > 5 * 1024 * 1024) { // 5MB limit
-      alert('Image size should be less than 5MB');
+    if (file.size > 10 * 1024 * 1024) { // 10MB limit
+      alert('Image size should be less than 10MB');
       return;
     }
-    
+
     try {
       // Compress the image before storing
       const compressedImage = await compressImage(file, 300, 300, 0.8);
@@ -219,6 +252,17 @@ function updateSectionPosition(section, axis, value) {
 
 function updateSectionStyle(section, property, value) {
   sectionStyles[section][property] = value;
+  // Trigger real-time canvas update if we're in the editor
+  updateCanvasElements();
+}
+
+// Function to update existing canvas elements with new styling
+function updateCanvasElements() {
+  // Emit event to parent component to update canvas
+  emit('stylingChanged', {
+    sectionStyles: sectionStyles,
+    formData: formData
+  });
 }
 
 // Template refs for draggable elements
@@ -246,24 +290,24 @@ function startDrag(event, sectionType) {
   dragState.startY = event.clientY
   dragState.initialX = sectionStyles[sectionType].position.x
   dragState.initialY = sectionStyles[sectionType].position.y
-  
+
   event.target.style.cursor = 'grabbing'
   event.preventDefault()
   event.stopPropagation()
-  
+
   console.log(`Started dragging ${sectionType}`)
 }
 
 // Handle mouse move for dragging
 function handleMouseMove(event) {
   if (!dragState.isDragging || !dragState.currentSection) return
-  
+
   const deltaX = event.clientX - dragState.startX
   const deltaY = event.clientY - dragState.startY
-  
+
   const newX = Math.max(0, Math.min(595 - 100, dragState.initialX + deltaX))
   const newY = Math.max(0, Math.min(842 - 50, dragState.initialY + deltaY))
-  
+
   updateSectionPosition(dragState.currentSection, 'x', newX)
   updateSectionPosition(dragState.currentSection, 'y', newY)
 }
@@ -284,7 +328,7 @@ function handleMouseUp(event) {
 function makeDraggable(element, sectionType) {
   let isDragging = false;
   let startX, startY, initialX, initialY;
-  
+
   const handleMouseDown = (e) => {
     isDragging = true;
     startX = e.clientX;
@@ -295,31 +339,31 @@ function makeDraggable(element, sectionType) {
     e.preventDefault();
     e.stopPropagation();
   };
-  
+
   const handleMouseMove = (e) => {
     if (!isDragging) return;
-    
+
     const deltaX = e.clientX - startX;
     const deltaY = e.clientY - startY;
-    
+
     const newX = Math.max(0, Math.min(595 - 100, initialX + deltaX)); // Constrain to canvas width
     const newY = Math.max(0, Math.min(842 - 50, initialY + deltaY)); // Constrain to canvas height
-    
+
     updateSectionPosition(sectionType, 'x', newX);
     updateSectionPosition(sectionType, 'y', newY);
   };
-  
+
   const handleMouseUp = () => {
     if (isDragging) {
       isDragging = false;
       element.style.cursor = 'grab';
     }
   };
-  
+
   element.addEventListener('mousedown', handleMouseDown);
   document.addEventListener('mousemove', handleMouseMove);
   document.addEventListener('mouseup', handleMouseUp);
-  
+
   // Return cleanup function
   return () => {
     element.removeEventListener('mousedown', handleMouseDown);
@@ -366,7 +410,7 @@ onMounted(() => {
   // Add global mouse event listeners for dragging
   document.addEventListener('mousemove', handleMouseMove)
   document.addEventListener('mouseup', handleMouseUp)
-  
+
   if (currentStep.value === 5) {
     initializeDraggable();
   }
@@ -390,6 +434,360 @@ function prevStep() {
     currentStep.value--;
   }
 }
+
+// Helper function to merge user data with theme template
+function mergeUserDataWithTheme(themeElements, userData) {
+  const updatedElements = [...themeElements];
+
+  // Add profile image if available
+  if (userData.basics.image) {
+    const profileImageStyles = sectionStyles?.profileImage || {};
+    updatedElements.push({
+      id: 'user-profile-image-' + Date.now(),
+      type: 'image',
+      x: profileImageStyles.position?.x || 450,
+      y: profileImageStyles.position?.y || 50,
+      width: profileImageStyles.width || 100,
+      height: profileImageStyles.height || 100,
+      src: userData.basics.image,
+      visible: true,
+      selectable: true,
+      removable: true,
+      draggable: true,
+      resizable: true,
+      opacity: 1,
+      alwaysOnTop: false,
+      showInExport: true,
+      rotation: 0,
+      animations: [],
+      blurEnabled: false,
+      blurRadius: 10,
+      brightnessEnabled: false,
+      brightness: 0,
+      sepiaEnabled: false,
+      grayscaleEnabled: false,
+      filters: {},
+      shadowEnabled: false,
+      shadowBlur: 5,
+      shadowOffsetX: 0,
+      shadowOffsetY: 0,
+      shadowColor: 'black',
+      shadowOpacity: 1
+    });
+  }
+
+  // Add user-specific elements to the theme
+  if (userData.basics.name) {
+    const basicsStyles = sectionStyles?.basics || {};
+    updatedElements.push({
+      id: 'user-name-' + Date.now(),
+      type: 'text',
+      x: 250,
+      y: 50,
+      width: 300,
+      height: 40,
+      text: userData.basics.name,
+      fontSize: basicsStyles.fontSize ? basicsStyles.fontSize + 10 : 24,
+      fontWeight: 'bold',
+      fill: basicsStyles.textColor || 'white',
+      fontFamily: 'Arial',
+      visible: true,
+      selectable: true,
+      removable: true,
+      draggable: true,
+      resizable: true,
+      contentEditable: true,
+      styleEditable: true,
+      opacity: 1,
+      alwaysOnTop: true,
+      showInExport: true,
+      rotation: 0,
+      animations: [],
+      blurEnabled: false,
+      blurRadius: 10,
+      brightnessEnabled: false,
+      brightness: 0,
+      sepiaEnabled: false,
+      grayscaleEnabled: false,
+      filters: {},
+      shadowEnabled: false,
+      shadowBlur: 5,
+      shadowOffsetX: 0,
+      shadowOffsetY: 0,
+      shadowColor: 'black',
+      shadowOpacity: 1
+    });
+  }
+
+  if (userData.basics.label) {
+    const basicsStyles = sectionStyles?.basics || {};
+    updatedElements.push({
+      id: 'user-title-' + Date.now(),
+      type: 'text',
+      x: 250,
+      y: 90,
+      width: 300,
+      height: 30,
+      text: userData.basics.label,
+      fontSize: basicsStyles.fontSize ? basicsStyles.fontSize + 2 : 16,
+      fill: basicsStyles.textColor || 'white',
+      fontFamily: 'Arial',
+      visible: true,
+      selectable: true,
+      removable: true,
+      draggable: true,
+      resizable: true,
+      contentEditable: true,
+      styleEditable: true,
+      opacity: 1,
+      alwaysOnTop: false,
+      showInExport: true,
+      rotation: 0,
+      animations: [],
+      blurEnabled: false,
+      blurRadius: 10,
+      brightnessEnabled: false,
+      brightness: 0,
+      sepiaEnabled: false,
+      grayscaleEnabled: false,
+      filters: {},
+      shadowEnabled: false,
+      shadowBlur: 5,
+      shadowOffsetX: 0,
+      shadowOffsetY: 0,
+      shadowColor: 'black',
+      shadowOpacity: 1
+    });
+  }
+
+  if (userData.basics.email) {
+    const basicsStyles = sectionStyles?.basics || {};
+    updatedElements.push({
+      id: 'user-email-' + Date.now(),
+      type: 'text',
+      x: 250,
+      y: 130,
+      width: 300,
+      height: 25,
+      text: userData.basics.email,
+      fontSize: basicsStyles.fontSize || 14,
+      fill: basicsStyles.textColor || 'white',
+      fontFamily: 'Arial',
+      visible: true,
+      selectable: true,
+      removable: true,
+      draggable: true,
+      resizable: true,
+      contentEditable: true,
+      styleEditable: true,
+      opacity: 1,
+      alwaysOnTop: false,
+      showInExport: true,
+      rotation: 0,
+      animations: [],
+      blurEnabled: false,
+      blurRadius: 10,
+      brightnessEnabled: false,
+      brightness: 0,
+      sepiaEnabled: false,
+      grayscaleEnabled: false,
+      filters: {},
+      shadowEnabled: false,
+      shadowBlur: 5,
+      shadowOffsetX: 0,
+      shadowOffsetY: 0,
+      shadowColor: 'black',
+      shadowOpacity: 1
+    });
+  }
+
+  if (userData.basics.phone) {
+    const basicsStyles = sectionStyles?.basics || {};
+    updatedElements.push({
+      id: 'user-phone-' + Date.now(),
+      type: 'text',
+      x: 250,
+      y: 155,
+      width: 300,
+      height: 25,
+      text: userData.basics.phone,
+      fontSize: basicsStyles.fontSize || 14,
+      fill: basicsStyles.textColor || 'white',
+      fontFamily: 'Arial',
+      visible: true,
+      selectable: true,
+      removable: true,
+      draggable: true,
+      resizable: true,
+      contentEditable: true,
+      styleEditable: true,
+      opacity: 1,
+      alwaysOnTop: false,
+      showInExport: true,
+      rotation: 0,
+      animations: [],
+      blurEnabled: false,
+      blurRadius: 10,
+      brightnessEnabled: false,
+      brightness: 0,
+      sepiaEnabled: false,
+      grayscaleEnabled: false,
+      filters: {},
+      shadowEnabled: false,
+      shadowBlur: 5,
+      shadowOffsetX: 0,
+      shadowOffsetY: 0,
+      shadowColor: 'black',
+      shadowOpacity: 1
+    });
+  }
+
+  // Add work experience
+  if (userData.work && userData.work.length > 0) {
+    const workStyles = sectionStyles?.work || {};
+    let workY = workStyles.position?.y || 250;
+    userData.work.forEach((job, index) => {
+      if (job.company && job.position) {
+        updatedElements.push({
+          id: `user-work-${index}-` + Date.now(),
+          type: 'text',
+          x: workStyles.position?.x || 250,
+          y: workY,
+          width: 300,
+          height: 60,
+          text: `${job.position} at ${job.company}\n${job.startDate} - ${job.endDate || 'Present'}`,
+          fontSize: workStyles.fontSize || 12,
+          fill: workStyles.textColor || 'black',
+          fontFamily: 'Arial',
+          visible: true,
+          selectable: true,
+          removable: true,
+          draggable: true,
+          resizable: true,
+          contentEditable: true,
+          styleEditable: true,
+          opacity: 1,
+          alwaysOnTop: false,
+          showInExport: true,
+          rotation: 0,
+          animations: [],
+          blurEnabled: false,
+          blurRadius: 10,
+          brightnessEnabled: false,
+          brightness: 0,
+          sepiaEnabled: false,
+          grayscaleEnabled: false,
+          filters: {},
+          shadowEnabled: false,
+          shadowBlur: 5,
+          shadowOffsetX: 0,
+          shadowOffsetY: 0,
+          shadowColor: 'black',
+          shadowOpacity: 1
+        });
+        workY += 80;
+      }
+    });
+  }
+
+  // Add education
+  if (userData.education && userData.education.length > 0) {
+    const educationStyles = sectionStyles?.education || {};
+    let eduY = educationStyles.position?.y || 450;
+    userData.education.forEach((edu, index) => {
+      if (edu.institution && edu.area) {
+        updatedElements.push({
+          id: `user-education-${index}-` + Date.now(),
+          type: 'text',
+          x: educationStyles.position?.x || 250,
+          y: eduY,
+          width: 300,
+          height: 60,
+          text: `${edu.studyType || 'Degree'} in ${edu.area}\n${edu.institution}`,
+          fontSize: educationStyles.fontSize || 12,
+          fill: educationStyles.textColor || 'black',
+          fontFamily: 'Arial',
+          visible: true,
+          selectable: true,
+          removable: true,
+          draggable: true,
+          resizable: true,
+          contentEditable: true,
+          styleEditable: true,
+          opacity: 1,
+          alwaysOnTop: false,
+          showInExport: true,
+          rotation: 0,
+          animations: [],
+          blurEnabled: false,
+          blurRadius: 10,
+          brightnessEnabled: false,
+          brightness: 0,
+          sepiaEnabled: false,
+          grayscaleEnabled: false,
+          filters: {},
+          shadowEnabled: false,
+          shadowBlur: 5,
+          shadowOffsetX: 0,
+          shadowOffsetY: 0,
+          shadowColor: 'black',
+          shadowOpacity: 1
+        });
+        eduY += 60;
+      }
+    });
+  }
+
+  // Add skills
+  if (userData.skills && userData.skills.length > 0) {
+    const skillsStyles = sectionStyles?.skills || {};
+    const skillsText = userData.skills.map(skill => skill.name).join(', ');
+    updatedElements.push({
+      id: 'user-skills-' + Date.now(),
+      type: 'text',
+      x: skillsStyles.position?.x || 250,
+      y: skillsStyles.position?.y || 600,
+      width: 300,
+      height: 80,
+      text: `Skills: ${skillsText}`,
+      fontSize: skillsStyles.fontSize || 12,
+      fill: skillsStyles.textColor || 'black',
+      fontFamily: 'Arial',
+      visible: true,
+      selectable: true,
+      removable: true,
+      draggable: true,
+      resizable: true,
+      contentEditable: true,
+      styleEditable: true,
+      opacity: 1,
+      alwaysOnTop: false,
+      showInExport: true,
+      rotation: 0,
+      animations: [],
+      blurEnabled: false,
+      blurRadius: 10,
+      brightnessEnabled: false,
+      brightness: 0,
+      sepiaEnabled: false,
+      grayscaleEnabled: false,
+      filters: {},
+      shadowEnabled: false,
+      shadowBlur: 5,
+      shadowOffsetX: 0,
+      shadowOffsetY: 0,
+      shadowColor: 'black',
+      shadowOpacity: 1
+    });
+  }
+
+  return updatedElements;
+}
+
+// Initialize component
+onMounted(() => {
+  loadThemeTemplates();
+});
 
 // Create resume design with user data
 async function createResumeDesign() {
@@ -420,8 +818,7 @@ async function createResumeDesign() {
       projects: []
     };
 
-    // Convert to Polotno-compatible format with section positioning
-    let polotnoData = convertJsonResumeToPolotno(jsonResumeData, sectionStyles);
+
 
     // Get the current user
     const user = JSON.parse(localStorage.getItem('user') || '{}');
@@ -430,31 +827,56 @@ async function createResumeDesign() {
       return;
     }
 
-    // Create a design with the user's data including styling and positioning
-    let designData = {
-      name: `${formData.basics.name || 'My Resume'} - ${selectedTheme.value}`,
-      data: {
-        pages: [{
-          id: 'page-1',
-          children: polotnoData.elements,
-          width: 595,  // A4 width in points
-          height: 842, // A4 height in points
-          background: 'white'
-        }],
-        unit: 'pt',
-        dpi: 72
-      },
-      userId: user.id,
-      public: false,
-      depuisTemplate: false
-    };
+    // Get the selected theme template
+    const selectedThemeTemplate = themeTemplates.value[selectedTheme.value];
+
+    let designData;
+
+    if (selectedThemeTemplate) {
+      // Merge user data with theme template
+      designData = {
+        name: `${formData.basics.name || 'My Resume'} - ${selectedTheme.value}`,
+        data: {
+          ...selectedThemeTemplate,
+          // Merge user content into theme template
+          pages: selectedThemeTemplate.pages.map(page => ({
+            ...page,
+            children: mergeUserDataWithTheme(page.children, jsonResumeData)
+          }))
+        },
+        userId: user.id,
+        public: false,
+        depuisTemplate: false
+      };
+    } else {
+      // Fallback to original method if theme template not available
+      let polotnoData = convertJsonResumeToPolotno(jsonResumeData, sectionStyles);
+
+      designData = {
+        name: `${formData.basics.name || 'My Resume'} - ${selectedTheme.value}`,
+        data: {
+          pages: [{
+            id: 'page-1',
+            children: polotnoData.elements,
+            width: 595,  // A4 width in points
+            height: 842, // A4 height in points
+            background: 'white'
+          }],
+          unit: 'pt',
+          dpi: 72
+        },
+        userId: user.id,
+        public: false,
+        depuisTemplate: false
+      };
+    }
 
     // Check payload size and compress if needed
     const payloadSize = JSON.stringify(designData).length;
     console.log('Payload size:', payloadSize, 'bytes');
-    
-    // If payload is too large (> 3MB), try without image
-    if (payloadSize > 3 * 1024 * 1024) {
+
+    // If payload is too large (> 10MB), try without image
+    if (payloadSize > 10 * 1024 * 1024) {
       console.warn('Payload too large, creating design without image');
       const jsonResumeDataWithoutImage = {
         ...jsonResumeData,
@@ -477,7 +899,7 @@ async function createResumeDesign() {
     }
   } catch (err) {
     console.error('Failed to create resume design:', err);
-    
+
     // If it's a 413 error, try again without the image
     if (err.message.includes('413') || err.message.includes('Payload Too Large')) {
       try {
@@ -504,9 +926,9 @@ async function createResumeDesign() {
           references: [],
           projects: []
         };
-        
+
         const polotnoDataWithoutImage = convertJsonResumeToPolotno(jsonResumeDataWithoutImage, sectionStyles);
-        
+
         const designDataWithoutImage = {
           name: `${formData.basics.name || 'My Resume'} - ${selectedTheme.value}`,
           data: {
@@ -524,7 +946,7 @@ async function createResumeDesign() {
           public: false,
           depuisTemplate: false
         };
-        
+
         const designResponse = await saveDesign(designDataWithoutImage);
         if (designResponse && designResponse.data && designResponse.data.id) {
           router.push({
@@ -560,7 +982,7 @@ async function createResumeDesign() {
       <div class="w-full bg-gray-200 rounded-full h-2">
         <div class="bg-blue-600 h-2 rounded-full transition-all duration-300" :style="{ width: (currentStep / totalSteps) * 100 + '%' }"></div>
       </div>
-      
+
       <!-- Step Indicator -->
       <div class="flex justify-between mt-4 text-xs">
         <div class="flex flex-col items-center" :class="{ 'text-blue-600 font-medium': currentStep === 1, 'text-gray-400': currentStep !== 1 }">
@@ -595,11 +1017,11 @@ async function createResumeDesign() {
         </div>
       </div>
     </div>
-  </div>  
+  </div>
     <!-- Step 1: Basic Information -->
     <div v-if="currentStep === 1" class="space-y-6">
       <h2 class="text-2xl font-bold text-gray-800 mb-6">Basic Information</h2>
-      
+
       <!-- Profile Image Upload -->
       <div class="bg-gray-50 p-6 rounded-lg">
         <h3 class="text-lg font-medium text-gray-800 mb-4">Profile Picture</h3>
@@ -624,7 +1046,7 @@ async function createResumeDesign() {
           </div>
         </div>
       </div>
-      
+
       <!-- Section Positioning and Styling -->
       <div class="bg-blue-50 p-6 rounded-lg">
         <h3 class="text-lg font-medium text-gray-800 mb-4">Basic Info Section Styling</h3>
@@ -639,7 +1061,7 @@ async function createResumeDesign() {
           </div>
           <div>
             <label class="block text-sm font-medium text-gray-700 mb-2">Text Color</label>
-            <input type="color" :value="sectionStyles.basics.textColor" @input="updateSectionStyle('basics', 'textColor', $event.target.value)" class="w-full h-10 border border-gray-300 rounded-lg" />
+            <input type="color" :value="sectionStyles.basics.textColor" @input="updateSectionStyle('basics', 'textColor', $event.target.value)" class="w-full h-20 border border-gray-300 rounded-lg" />
           </div>
           <div>
             <label class="block text-sm font-medium text-gray-700 mb-2">Font Size</label>
@@ -647,7 +1069,7 @@ async function createResumeDesign() {
           </div>
         </div>
       </div>
-      
+
       <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
         <div>
           <label class="block text-sm font-medium text-gray-700 mb-2">Full Name *</label>
@@ -674,11 +1096,11 @@ async function createResumeDesign() {
           <BaseInput v-model="formData.basics.location.city" name="city" placeholder="La Marsa" />
         </div>
       </div>
-      
+
       <div>
         <label class="block text-sm font-medium text-gray-700 mb-2">Professional Summary</label>
-        <textarea 
-          v-model="formData.basics.summary" 
+        <textarea
+          v-model="formData.basics.summary"
           name="summary"
           class="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
           rows="4"
@@ -695,7 +1117,7 @@ async function createResumeDesign() {
           + Add Job
         </BaseButton>
       </div>
-      
+
       <!-- Section Positioning and Styling -->
       <div class="bg-green-50 p-6 rounded-lg">
         <h3 class="text-lg font-medium text-gray-800 mb-4">Work Experience Section Styling</h3>
@@ -710,7 +1132,7 @@ async function createResumeDesign() {
           </div>
           <div>
             <label class="block text-sm font-medium text-gray-700 mb-2">Text Color</label>
-            <input type="color" :value="sectionStyles.work.textColor" @input="updateSectionStyle('work', 'textColor', $event.target.value)" class="w-full h-10 border border-gray-300 rounded-lg" />
+            <input type="color" :value="sectionStyles.work.textColor" @input="updateSectionStyle('work', 'textColor', $event.target.value)" class="w-full h-20 border border-gray-300 rounded-lg" />
           </div>
           <div>
             <label class="block text-sm font-medium text-gray-700 mb-2">Font Size</label>
@@ -718,11 +1140,11 @@ async function createResumeDesign() {
           </div>
         </div>
       </div>
-      
+
       <div v-for="(job, index) in formData.work" :key="index" class="border border-gray-200 rounded-lg p-4 space-y-4">
         <div class="flex justify-between items-center">
           <h3 class="text-lg font-medium text-gray-800">Job {{ index + 1 }}</h3>
-          <button 
+          <button
             v-if="formData.work.length > 1"
             @click="removeWorkExperience(index)"
             class="text-red-600 hover:text-red-800"
@@ -730,7 +1152,7 @@ async function createResumeDesign() {
             Remove
           </button>
         </div>
-        
+
         <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
           <div>
             <label class="block text-sm font-medium text-gray-700 mb-2">Company *</label>
@@ -749,11 +1171,11 @@ async function createResumeDesign() {
             <BaseInput v-model="job.endDate" :name="`endDate_${index}`" type="date" placeholder="Leave empty if current" />
           </div>
         </div>
-        
+
         <div>
           <label class="block text-sm font-medium text-gray-700 mb-2">Job Description</label>
-          <textarea 
-            v-model="job.summary" 
+          <textarea
+            v-model="job.summary"
             :name="`jobSummary_${index}`"
             class="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
             rows="3"
@@ -771,7 +1193,7 @@ async function createResumeDesign() {
           + Add Education
         </BaseButton>
       </div>
-      
+
       <!-- Section Positioning and Styling -->
       <div class="bg-purple-50 p-6 rounded-lg">
         <h3 class="text-lg font-medium text-gray-800 mb-4">Education Section Styling</h3>
@@ -786,7 +1208,7 @@ async function createResumeDesign() {
           </div>
           <div>
             <label class="block text-sm font-medium text-gray-700 mb-2">Text Color</label>
-            <input type="color" :value="sectionStyles.education.textColor" @input="updateSectionStyle('education', 'textColor', $event.target.value)" class="w-full h-10 border border-gray-300 rounded-lg" />
+            <input type="color" :value="sectionStyles.education.textColor" @input="updateSectionStyle('education', 'textColor', $event.target.value)" class="w-full h-20 border border-gray-300 rounded-lg" />
           </div>
           <div>
             <label class="block text-sm font-medium text-gray-700 mb-2">Font Size</label>
@@ -794,11 +1216,11 @@ async function createResumeDesign() {
           </div>
         </div>
       </div>
-      
+
       <div v-for="(edu, index) in formData.education" :key="index" class="border border-gray-200 rounded-lg p-4 space-y-4">
         <div class="flex justify-between items-center">
           <h3 class="text-lg font-medium text-gray-800">Education {{ index + 1 }}</h3>
-          <button 
+          <button
             v-if="formData.education.length > 1"
             @click="removeEducation(index)"
             class="text-red-600 hover:text-red-800"
@@ -806,7 +1228,7 @@ async function createResumeDesign() {
             Remove
           </button>
         </div>
-        
+
         <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
           <div>
             <label class="block text-sm font-medium text-gray-700 mb-2">Institution *</label>
@@ -843,7 +1265,7 @@ async function createResumeDesign() {
           + Add Skill
         </BaseButton>
       </div>
-      
+
       <!-- Section Positioning and Styling -->
       <div class="bg-yellow-50 p-6 rounded-lg">
         <h3 class="text-lg font-medium text-gray-800 mb-4">Skills Section Styling</h3>
@@ -858,7 +1280,7 @@ async function createResumeDesign() {
           </div>
           <div>
             <label class="block text-sm font-medium text-gray-700 mb-2">Text Color</label>
-            <input type="color" :value="sectionStyles.skills.textColor" @input="updateSectionStyle('skills', 'textColor', $event.target.value)" class="w-full h-10 border border-gray-300 rounded-lg" />
+            <input type="color" :value="sectionStyles.skills.textColor" @input="updateSectionStyle('skills', 'textColor', $event.target.value)" class="w-full h-20 border border-gray-300 rounded-lg" />
           </div>
           <div>
             <label class="block text-sm font-medium text-gray-700 mb-2">Font Size</label>
@@ -866,11 +1288,11 @@ async function createResumeDesign() {
           </div>
         </div>
       </div>
-      
+
       <div v-for="(skill, index) in formData.skills" :key="index" class="border border-gray-200 rounded-lg p-4 space-y-4">
         <div class="flex justify-between items-center">
           <h3 class="text-lg font-medium text-gray-800">Skill {{ index + 1 }}</h3>
-          <button 
+          <button
             v-if="formData.skills.length > 1"
             @click="removeSkill(index)"
             class="text-red-600 hover:text-red-800"
@@ -878,7 +1300,7 @@ async function createResumeDesign() {
             Remove
           </button>
         </div>
-        
+
         <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
           <div>
             <label class="block text-sm font-medium text-gray-700 mb-2">Skill Category *</label>
@@ -890,98 +1312,69 @@ async function createResumeDesign() {
           </div>
         </div>
       </div>
-      
-      <!-- Theme Selection -->
-      <div class="mt-8">
-        <h3 class="text-lg font-medium text-gray-800 mb-4">Choose Resume Theme</h3>
-        <div class="grid grid-cols-2 md:grid-cols-4 gap-4">
-          <div 
-            v-for="theme in ['modern', 'minimal']" 
-            :key="theme"
-            class="cursor-pointer border-2 rounded-lg p-3 text-center transition-colors"
-            :class="selectedTheme === theme ? 'border-blue-500 bg-blue-50' : 'border-gray-200 hover:border-gray-300'"
-            @click="selectedTheme = theme"
-          >
-            <div class="w-full h-16 bg-gray-100 rounded mb-2 flex items-center justify-center text-xs text-gray-500">
-              {{ theme }} Preview
-            </div>
-            <span class="text-sm font-medium capitalize">{{ theme }}</span>
-          </div>
-        </div>
-      </div>
+
+
     </div>
 
     <!-- Step 5: Layout Preview & Final Adjustments -->
     <div v-if="currentStep === 5" class="space-y-6">
       <h2 class="text-2xl font-bold text-gray-800 mb-6">Layout Preview & Final Adjustments</h2>
-      
+
       <!-- Theme Preview Section -->
       <div class="bg-white border-2 border-gray-200 rounded-lg p-6">
         <h3 class="text-lg font-medium text-gray-800 mb-4">Theme Preview</h3>
         <div class="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
-          <div 
-            v-for="theme in ['modern', 'elegant', 'classic', 'minimal']" 
-            :key="theme"
+          <div
+            v-for="theme in availableThemes"
+            :key="theme.id"
             class="cursor-pointer border-2 rounded-lg p-3 text-center transition-colors"
-            :class="selectedTheme === theme ? 'border-blue-500 bg-blue-50' : 'border-gray-200 hover:border-gray-300'"
-            @click="selectedTheme = theme"
+            :class="selectedTheme === theme.id ? 'border-blue-500 bg-blue-50' : 'border-gray-200 hover:border-gray-300'"
+            @click="selectedTheme = theme.id"
           >
             <div class="w-full h-20 rounded mb-2 flex flex-col items-center justify-center text-xs overflow-hidden"
                  :class="{
-                   'bg-gradient-to-br from-blue-50 to-blue-100 border border-blue-200': theme === 'modern',
-                   'bg-gradient-to-br from-purple-50 to-purple-100 border border-purple-200': theme === 'elegant',
-                   'bg-gradient-to-br from-gray-50 to-gray-100 border border-gray-300': theme === 'classic',
-                   'bg-white border border-gray-200': theme === 'minimal'
+                   'bg-gradient-to-br from-blue-50 to-blue-100 border border-blue-200': theme.id === 'modern',
+                   'bg-white border border-gray-200': theme.id === 'minimal'
                  }">
               <div class="w-full h-2 mb-1"
                    :class="{
-                     'bg-blue-500': theme === 'modern',
-                     'bg-purple-500': theme === 'elegant', 
-                     'bg-gray-700': theme === 'classic',
-                     'bg-black': theme === 'minimal'
+                     'bg-blue-500': theme.id === 'modern',
+                     'bg-black': theme.id === 'minimal'
                    }"></div>
               <div class="text-xs px-2 text-center"
                    :class="{
-                     'text-blue-700': theme === 'modern',
-                     'text-purple-700': theme === 'elegant',
-                     'text-gray-700': theme === 'classic',
-                     'text-black': theme === 'minimal'
-                   }">{{ theme }} Style</div>
+                     'text-blue-700': theme.id === 'modern',
+                     'text-black': theme.id === 'minimal'
+                   }">{{ theme.name }} Style</div>
             </div>
-            <span class="text-sm font-medium capitalize">{{ theme }}</span>
+            <span class="text-sm font-medium capitalize">{{ theme.name }}</span>
           </div>
         </div>
-        
+
         <!-- Theme Description -->
         <div class="bg-gray-50 p-4 rounded-lg">
-          <h4 class="font-medium text-gray-800 mb-2">{{ selectedTheme.charAt(0).toUpperCase() + selectedTheme.slice(1) }} Theme</h4>
+          <h4 class="font-medium text-gray-800 mb-2">{{ availableThemes.find(t => t.id === selectedTheme)?.name || selectedTheme.charAt(0).toUpperCase() + selectedTheme.slice(1) }} Theme</h4>
           <p class="text-sm text-gray-600">
             <span v-if="selectedTheme === 'modern'">Clean and contemporary design with blue accents and modern typography. Perfect for tech and creative professionals.</span>
-            <span v-else-if="selectedTheme === 'elegant'">Sophisticated design with purple accents and refined styling. Ideal for executive and professional roles.</span>
-            <span v-else-if="selectedTheme === 'classic'">Traditional and timeless design with neutral colors. Suitable for conservative industries and formal positions.</span>
             <span v-else-if="selectedTheme === 'minimal'">Simple and clean design focusing on content. Great for any industry where clarity is key.</span>
           </p>
         </div>
       </div>
-      
+
       <!-- Layout Preview -->
       <div class="bg-white border-2 border-gray-200 rounded-lg p-6">
-        <h3 class="text-lg font-medium text-gray-800 mb-4">Layout Preview (A4 Format) - {{ selectedTheme.charAt(0).toUpperCase() + selectedTheme.slice(1) }} Theme</h3>
-        <div class="relative border border-gray-300 mx-auto" 
+        <h3 class="text-lg font-medium text-gray-800 mb-4">Layout Preview (A4 Format) - {{ availableThemes.find(t => t.id === selectedTheme)?.name || selectedTheme.charAt(0).toUpperCase() + selectedTheme.slice(1) }} Theme</h3>
+        <div class="relative border border-gray-300 mx-auto"
              :class="{
                'bg-gradient-to-br from-blue-50 to-white': selectedTheme === 'modern',
-               'bg-gradient-to-br from-purple-50 to-white': selectedTheme === 'elegant',
-               'bg-gray-50': selectedTheme === 'classic',
                'bg-white': selectedTheme === 'minimal'
              }"
              style="height: 842px; width: 595px; transform: scale(0.7); transform-origin: top center;">
-                   
+
           <!-- Profile Image Preview -->
-          <div v-if="profileImageUrl" class="absolute rounded cursor-grab select-none overflow-hidden" 
+          <div v-if="profileImageUrl" class="absolute rounded cursor-grab select-none overflow-hidden"
                 :class="{
                   'border-2 border-blue-300 shadow-lg': selectedTheme === 'modern',
-                  'border-2 border-purple-300 shadow-lg': selectedTheme === 'elegant',
-                  'border border-gray-400': selectedTheme === 'classic',
                   'border border-gray-300': selectedTheme === 'minimal'
                 }"
                 :style="{ left: sectionStyles.profileImage.position.x + 'px', top: (sectionStyles.profileImage.position.y + 40) + 'px', width: sectionStyles.profileImage.width + 'px', height: sectionStyles.profileImage.height + 'px' }"
@@ -996,9 +1389,9 @@ async function createResumeDesign() {
                  }">Profile Image</div>
             <img :src="profileImageUrl" alt="Profile" class="w-full h-full object-cover" />
           </div>
-          
+
           <!-- Basic Info Preview -->
-          <div class="absolute p-3 rounded cursor-grab select-none" 
+          <div class="absolute p-3 rounded cursor-grab select-none"
                 :class="{
                   'border-2 border-blue-300 bg-blue-50 shadow-md': selectedTheme === 'modern',
                   'border-2 border-purple-300 bg-purple-50 shadow-md': selectedTheme === 'elegant',
@@ -1011,32 +1404,24 @@ async function createResumeDesign() {
             <div class="text-xs mb-1"
                  :class="{
                    'text-blue-700': selectedTheme === 'modern',
-                   'text-purple-700': selectedTheme === 'elegant',
-                   'text-gray-700': selectedTheme === 'classic',
                    'text-gray-600': selectedTheme === 'minimal'
                  }">Basic Info</div>
             <div class="font-bold"
                  :class="{
                    'text-blue-900': selectedTheme === 'modern',
-                   'text-purple-900': selectedTheme === 'elegant',
-                   'text-gray-900': selectedTheme === 'classic',
                    'text-black': selectedTheme === 'minimal'
                  }">{{ formData.basics.name || 'Your Name' }}</div>
             <div class="font-medium"
                  :class="{
                    'text-blue-700': selectedTheme === 'modern',
-                   'text-purple-700': selectedTheme === 'elegant',
-                   'text-gray-700': selectedTheme === 'classic',
                    'text-gray-800': selectedTheme === 'minimal'
                  }">{{ formData.basics.label || 'Job Title' }}</div>
           </div>
-          
+
           <!-- Work Experience Preview -->
-          <div class="absolute p-3 rounded cursor-grab select-none" 
+          <div class="absolute p-3 rounded cursor-grab select-none"
                 :class="{
                   'border-2 border-blue-200 bg-blue-25': selectedTheme === 'modern',
-                  'border-2 border-purple-200 bg-purple-25': selectedTheme === 'elegant',
-                  'border border-gray-300 bg-white': selectedTheme === 'classic',
                   'border border-gray-200 bg-gray-50': selectedTheme === 'minimal'
                 }"
                 :style="{ left: sectionStyles.work.position.x + 'px', top: (sectionStyles.work.position.y + 40) + 'px', fontSize: sectionStyles.work.fontSize + 'px' }"
@@ -1045,31 +1430,23 @@ async function createResumeDesign() {
             <div class="text-xs mb-1"
                  :class="{
                    'text-blue-700': selectedTheme === 'modern',
-                   'text-purple-700': selectedTheme === 'elegant',
-                   'text-gray-700': selectedTheme === 'classic',
                    'text-gray-600': selectedTheme === 'minimal'
                  }">Work Experience</div>
             <div class="font-semibold"
                  :class="{
                    'text-blue-800': selectedTheme === 'modern',
-                   'text-purple-800': selectedTheme === 'elegant',
-                   'text-gray-800': selectedTheme === 'classic',
                    'text-black': selectedTheme === 'minimal'
                  }">{{ formData.work[0]?.company || 'Company Name' }}</div>
             <div :class="{
                    'text-blue-600': selectedTheme === 'modern',
-                   'text-purple-600': selectedTheme === 'elegant',
-                   'text-gray-600': selectedTheme === 'classic',
                    'text-gray-700': selectedTheme === 'minimal'
                  }">{{ formData.work[0]?.position || 'Position' }}</div>
           </div>
-          
+
           <!-- Education Preview -->
-          <div class="absolute p-3 rounded cursor-grab select-none" 
+          <div class="absolute p-3 rounded cursor-grab select-none"
                 :class="{
                   'border-2 border-blue-200 bg-blue-25': selectedTheme === 'modern',
-                  'border-2 border-purple-200 bg-purple-25': selectedTheme === 'elegant',
-                  'border border-gray-300 bg-white': selectedTheme === 'classic',
                   'border border-gray-200 bg-gray-50': selectedTheme === 'minimal'
                 }"
                 :style="{ left: sectionStyles.education.position.x + 'px', top: (sectionStyles.education.position.y + 40) + 'px', fontSize: sectionStyles.education.fontSize + 'px' }"
@@ -1078,31 +1455,23 @@ async function createResumeDesign() {
             <div class="text-xs mb-1"
                  :class="{
                    'text-blue-700': selectedTheme === 'modern',
-                   'text-purple-700': selectedTheme === 'elegant',
-                   'text-gray-700': selectedTheme === 'classic',
                    'text-gray-600': selectedTheme === 'minimal'
                  }">Education</div>
             <div class="font-semibold"
                  :class="{
                    'text-blue-800': selectedTheme === 'modern',
-                   'text-purple-800': selectedTheme === 'elegant',
-                   'text-gray-800': selectedTheme === 'classic',
                    'text-black': selectedTheme === 'minimal'
                  }">{{ formData.education[0]?.institution || 'University' }}</div>
             <div :class="{
                    'text-blue-600': selectedTheme === 'modern',
-                   'text-purple-600': selectedTheme === 'elegant',
-                   'text-gray-600': selectedTheme === 'classic',
                    'text-gray-700': selectedTheme === 'minimal'
                  }">{{ formData.education[0]?.area || 'Field of Study' }}</div>
           </div>
-          
+
           <!-- Skills Preview -->
-          <div class="absolute p-3 rounded cursor-grab select-none" 
+          <div class="absolute p-3 rounded cursor-grab select-none"
                 :class="{
                   'border-2 border-blue-200 bg-blue-25': selectedTheme === 'modern',
-                  'border-2 border-purple-200 bg-purple-25': selectedTheme === 'elegant',
-                  'border border-gray-300 bg-white': selectedTheme === 'classic',
                   'border border-gray-200 bg-gray-50': selectedTheme === 'minimal'
                 }"
                 :style="{ left: sectionStyles.skills.position.x + 'px', top: (sectionStyles.skills.position.y + 40) + 'px', fontSize: sectionStyles.skills.fontSize + 'px' }"
@@ -1111,21 +1480,17 @@ async function createResumeDesign() {
             <div class="text-xs mb-1"
                  :class="{
                    'text-blue-700': selectedTheme === 'modern',
-                   'text-purple-700': selectedTheme === 'elegant',
-                   'text-gray-700': selectedTheme === 'classic',
                    'text-gray-600': selectedTheme === 'minimal'
                  }">Skills</div>
             <div class="font-semibold"
                  :class="{
                    'text-blue-800': selectedTheme === 'modern',
-                   'text-purple-800': selectedTheme === 'elegant',
-                   'text-gray-800': selectedTheme === 'classic',
                    'text-black': selectedTheme === 'minimal'
                  }">{{ formData.skills[0]?.name || 'Skill Category' }}</div>
           </div>
         </div>
       </div>
-      
+
       <!-- Error Display -->
       <div v-if="error" class="bg-red-50 border border-red-200 rounded-lg p-4">
         <div class="text-red-800">{{ error }}</div>
@@ -1134,34 +1499,34 @@ async function createResumeDesign() {
 
     <!-- Navigation Buttons -->
     <div class="flex justify-between mt-8">
-      <button 
-        v-if="currentStep > 1" 
-        @click="prevStep" 
+      <button
+        v-if="currentStep > 1"
+        @click="prevStep"
         class="px-6 py-2 bg-gray-600 text-white rounded-lg hover:bg-gray-700 transition-colors"
       >
         Previous
       </button>
       <div v-else></div>
-      
-      <button 
-        v-if="currentStep < totalSteps" 
-        @click="nextStep" 
+
+      <button
+        v-if="currentStep < totalSteps"
+        @click="nextStep"
         class="px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
         :disabled="currentStep === 1 && (!formData.basics.name || !formData.basics.label || !formData.basics.email)"
       >
         Next
       </button>
-      
-      <button 
-        v-else 
-        @click="createResumeDesign" 
+
+      <button
+        v-else
+        @click="createResumeDesign"
         :disabled="isLoading || !formData.basics.name || !formData.basics.label || !formData.basics.email"
         class="px-6 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors disabled:opacity-50"
       >
         {{ isLoading ? 'Creating...' : 'Create Resume' }}
       </button>
     </div>
-  
+
 </template>
 
 <style scoped>

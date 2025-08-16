@@ -1,15 +1,19 @@
+import 'dotenv/config';
 import express from 'express';
 import path from 'path';
 import cookieParser from 'cookie-parser';
 import logger from 'morgan';
 import { fileURLToPath } from 'url';
 import { dirname, join } from 'path';
+import session from 'express-session';
+import passport from './config/passport.js';
 
 import designRoutes from './modules/designs/design.routes.js';
 import userRoutes from './modules/users/user.routes.js'
 import templateRouter from './modules/templates/template.routes.js';
 import contactRouter from './modules/contact/contact.routes.js';
 import testimonialRouter from './modules/testimonials/testimonial.routes.js';
+import oauthRoutes from './modules/auth/oauth.routes.js';
 import cors from 'cors';
 
 const app = express();
@@ -19,8 +23,8 @@ const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
 
 app.use(logger('dev'));
-app.use(express.json({ limit: '3mb' }));
-app.use(express.urlencoded({ extended: false, limit: '3mb' }));
+app.use(express.json({ limit: '10mb' }));
+app.use(express.urlencoded({ extended: false, limit: '10mb' }));
 app.use(cookieParser());
 app.use(express.static(join(__dirname, 'public')));
 app.use('/uploads', express.static(join(__dirname, 'uploads')));
@@ -29,10 +33,26 @@ app.use(cors({
   credentials: true
 }));
 
+// Session configuration
+app.use(session({
+  secret: process.env.SESSION_SECRET || 'your-super-secret-session-key-here',
+  resave: false,
+  saveUninitialized: false,
+  cookie: {
+    secure: false, // Set to true in production with HTTPS
+    maxAge: 24 * 60 * 60 * 1000 // 24 hours
+  }
+}));
+
+// Passport middleware
+app.use(passport.initialize());
+app.use(passport.session());
+
 app.use('/api/designs', designRoutes);
 app.use('/api/users',userRoutes)
 app.use('/api/contact', contactRouter);
 app.use('/api/templates', templateRouter);
 app.use('/api/testimonials', testimonialRouter);
+app.use('/auth', oauthRoutes);
 
 export default app;

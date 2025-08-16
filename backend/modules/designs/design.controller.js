@@ -1,3 +1,25 @@
+// Helper function to safely stringify JSON data
+const safeJSONStringify = (data) => {
+  try {
+    // Check for circular references and other issues
+    const seen = new WeakSet();
+    const replacer = (key, value) => {
+      if (typeof value === 'object' && value !== null) {
+        if (seen.has(value)) {
+          return '[Circular Reference]';
+        }
+        seen.add(value);
+      }
+      return value;
+    };
+    
+    return JSON.stringify(data, replacer);
+  } catch (error) {
+    console.error('❌ JSON stringification error:', error);
+    throw new Error('Unable to serialize data to JSON: ' + error.message);
+  }
+};
+
 // Set design public/private
 export const setToPublic = async (req, res, repo) => {
   const { id } = req.params;
@@ -28,6 +50,7 @@ export const setToPublic = async (req, res, repo) => {
     await repo.save(design);
     return res.status(200).json({ message: `Design set to ${isPublic ? 'public' : 'private'}` });
   } catch (error) {
+    console.error('❌ Error updating design:', error);
     return res.status(500).json({ message: "Server error", error: error.message });
   }
 };
@@ -207,38 +230,43 @@ export const getAllDesigns = async (req, res, repo) => {
 export const createDesign = async (req, res, repo) => {
   try {
     const { userId, data, ...rest } = req.body;
+    
+    // Validate required fields
+    if (!rest.name || rest.name.trim() === '') {
+      return res.status(400).json({ 
+        message: "Design name is required" 
+      });
+    }
+    
+    console.log('📝 Creating new design:', rest.name, 'for user:', userId);
+    
+    // Safely stringify the data with error handling
+     let stringifiedData = null;
+     if (data) {
+       try {
+         stringifiedData = safeJSONStringify(data);
+         console.log('✅ Successfully stringified design data, size:', stringifiedData.length, 'characters');
+       } catch (stringifyError) {
+         console.error('❌ Error stringifying design data:', stringifyError);
+         return res.status(400).json({ 
+           message: "Invalid design data format", 
+           error: stringifyError.message 
+         });
+       }
+     }
+    
     const design = repo.create({ 
       ...rest,
-      data: data ? JSON.stringify(data) : null
+      data: stringifiedData
     });
+    
     if (userId) {
       design.user = { id: userId };
     }
+    
     const result = await repo.save(design);
 
-    // Generate preview after saving
     if (result) {
-      try {
-        const { generateDesignPreview } = await import('../../services/previewService.js');
-        // Parse the data field if it's a string
-        let designData = result.data;
-        if (typeof designData === 'string') {
-          try {
-            designData = JSON.parse(designData);
-          } catch (parseError) {
-            console.warn('Failed to parse design data for preview:', parseError);
-            designData = {};
-          }
-        }
-        const previewData = generateDesignPreview({ data: designData });
-        if (previewData) {
-          result.imageUrl = previewData;
-          await repo.save(result);
-        }
-      } catch (previewError) {
-        console.warn('Failed to generate design preview:', previewError);
-      }
-      
       return res.status(201).json({
         data: result,
         message: "Design has been created"
@@ -248,7 +276,7 @@ export const createDesign = async (req, res, repo) => {
       message: "Server error"
     });
   } catch (error) {
-    console.error('Error creating design:', error);
+    console.error('❌ Error creating design:', error);
     return res.status(500).json({ message: "Server error", error: error.message });
   }
 };
@@ -258,6 +286,14 @@ export const updateDesign = async (req, res, repo) => {
   const { userId, data, ...updateData } = req.body;
 
   try {
+    console.log('📝 Updating design:', id, 'with data keys:', Object.keys(updateData));
+    
+    // Validate ID parameter
+    if (!id || isNaN(Number(id))) {
+      return res.status(400).json({ 
+        message: "Valid design ID is required" 
+      });
+    }
     let design;
     try {
       // Find existing design by id
@@ -294,10 +330,25 @@ export const updateDesign = async (req, res, repo) => {
       return res.status(404).json({ message: "Design not found" });
     }
 
+    // Safely stringify the data with error handling
+     let stringifiedData = design.data; // Keep existing data if no new data provided
+     if (data) {
+       try {
+         stringifiedData = safeJSONStringify(data);
+         console.log('✅ Successfully stringified updated design data, size:', stringifiedData.length, 'characters');
+       } catch (stringifyError) {
+         console.error('❌ Error stringifying updated design data:', stringifyError);
+         return res.status(400).json({ 
+           message: "Invalid design data format", 
+           error: stringifyError.message 
+         });
+       }
+     }
+    
     // Merge updateData into found design
     const mergeData = {
       ...updateData,
-      data: data ? JSON.stringify(data) : design.data
+      data: stringifiedData
     };
     repo.merge(design, mergeData);
     if (userId) {
@@ -306,36 +357,13 @@ export const updateDesign = async (req, res, repo) => {
 
     // Save updated design
     const result = await repo.save(design);
-    
-    // Generate preview after updating if data changed
-    if (data && !updateData.imageUrl) {
-      try {
-        const { generateDesignPreview } = await import('../../services/previewService.js');
-        // Parse the data field if it's a string
-        let designData = result.data;
-        if (typeof designData === 'string') {
-          try {
-            designData = JSON.parse(designData);
-          } catch (parseError) {
-            console.warn('Failed to parse design data for preview:', parseError);
-            designData = {};
-          }
-        }
-        const previewData = generateDesignPreview({ data: designData });
-        if (previewData) {
-          result.imageUrl = previewData;
-          await repo.save(result);
-        }
-      } catch (previewError) {
-        console.warn('Failed to generate design preview:', previewError);
-      }
-    }
 
     return res.status(200).json({
       data: result,
       message: "Design updated successfully",
     });
   } catch (error) {
+    console.error('❌ Error updating design:', error);
     return res.status(500).json({ message: "Server error", error: error.message });
   }
 };

@@ -11,7 +11,7 @@
         />
       </div>
       <div class="flex space-x-2">
-       
+
         <BaseButton
           class="bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700"
           href="/dashboard/templates"
@@ -20,7 +20,7 @@
         </BaseButton>
       </div>
     </div>
-   
+
 
     <!-- Data Table -->
     <div class="overflow-x-auto">
@@ -40,15 +40,15 @@
         <template #item-preview="{ preview, id }">
           <router-link :to="`/create/${id}`">
             <div class="w-20 h-15 relative overflow-hidden rounded-md border border-gray-300 cursor-pointer hover:opacity-80 transition-opacity">
-              <img 
+              <img
                 v-if="preview && preview !== ''"
-                :src="preview" 
-                alt="Design preview" 
+                :src="preview"
+                alt="Design preview"
                 class="w-full h-full object-cover"
                 @error="handleImageError"
               />
-              <div 
-                v-else 
+              <div
+                v-else
                 class="w-full h-full bg-gray-100 flex items-center justify-center text-gray-400"
               >
                 <div class="text-center">
@@ -61,7 +61,7 @@
             </div>
           </router-link>
         </template>
-        
+
         <!-- Name cell, clickable -->
         <template #item-name="{ name, id }">
           <router-link :to="`/create/${id}`" class="text-blue-600 hover:underline cursor-pointer">{{ name }}</router-link>
@@ -81,7 +81,8 @@ import { ref, computed, onMounted } from 'vue'
 import EasyDataTable from 'vue3-easy-data-table'
 import BaseButton from '@/components/atoms/BaseButton.vue'
 import { getAllDesigns, deleteDesign, saveDesign } from '@/api/designs.js'
-import { generateVitePreviewById } from '@/services/vitePreviewService.js'
+import { generatePolotnoPreviewById } from '@/services/polotnoPreviewService.js'
+import { debugPreviewGeneration } from '@/debug/previewDebug.js'
 
 const headers = [
   { text: 'Design Name', value: 'name' },
@@ -101,7 +102,7 @@ async function fetchDesigns() {
     const user = JSON.parse(localStorage.getItem('user') || '{}')
     const userId = user.id
     const fetchedDesigns = await getAllDesigns(userId)
-    
+
     designs.value = fetchedDesigns
     items.value = fetchedDesigns.map(d => ({
       id: d.id,
@@ -120,7 +121,7 @@ async function fetchDesigns() {
 
 async function generateMissingPreviews() {
   const designsWithoutPreviews = designs.value.filter(d => !d.imageUrl)
-  
+
   if (designsWithoutPreviews.length === 0) {
     alert('All designs already have previews!')
     return
@@ -133,10 +134,10 @@ async function generateMissingPreviews() {
     for (const design of designsWithoutPreviews) {
       try {
         console.log(`Generating preview for design: ${design.name}`)
-        
+
         // Generate preview using the Vite service with design ID
-        const previewDataUrl = await generateVitePreviewById(design.id, 400, 300)
-        
+        const previewDataUrl = await generatePolotnoPreviewById(design.id, 400, 300)
+
         if (previewDataUrl) {
           // Update the design with the new preview
           const updateData = {
@@ -147,16 +148,16 @@ async function generateMissingPreviews() {
             imageUrl: previewDataUrl,
             userId: design.userId
           }
-          
+
           await saveDesign(updateData)
-          
+
           // Update local data
           design.imageUrl = previewDataUrl
           const itemIndex = items.value.findIndex(item => item.id === design.id)
           if (itemIndex !== -1) {
             items.value[itemIndex].preview = previewDataUrl
           }
-          
+
           console.log(`✓ Preview generated for: ${design.name}`)
         } else {
           console.log(`⚠ Failed to generate preview for: ${design.name}`)
@@ -164,13 +165,13 @@ async function generateMissingPreviews() {
       } catch (error) {
         console.error(`Error generating preview for ${design.name}:`, error)
       }
-      
+
       previewProgress.value.current++
-      
+
       // Add a small delay to prevent overwhelming the browser
       await new Promise(resolve => setTimeout(resolve, 100))
     }
-    
+
     alert('Preview generation completed!')
   } catch (error) {
     console.error('Error in batch preview generation:', error)
@@ -182,7 +183,6 @@ async function generateMissingPreviews() {
 }
 
 async function handleDelete(id) {
-  if (confirm('Are you sure you want to delete this design?')) {
     try {
       await deleteDesign(id)
       await fetchDesigns() // Refresh the list
@@ -190,7 +190,6 @@ async function handleDelete(id) {
       console.error('Error deleting design:', error)
       alert('Failed to delete design. Please try again.')
     }
-  }
 }
 
 // Handle image loading errors
@@ -244,7 +243,14 @@ const filterOptions = computed(() => {
   return filterOptionsArray
 })
 
-onMounted(() => {
-  fetchDesigns()
+onMounted(async () => {
+  await fetchDesigns();
+  await generateMissingPreviews();
+  
+  // Run debug to understand preview generation issues
+  setTimeout(() => {
+    console.log('🔧 Running preview generation debug...');
+    debugPreviewGeneration();
+  }, 2000);
 })
 </script>

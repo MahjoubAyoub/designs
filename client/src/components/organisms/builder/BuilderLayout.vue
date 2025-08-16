@@ -6,10 +6,10 @@
     @update:public="handlePublicChange"
   />
   <div ref="container" class="w-full h-screen" />
-  <JsonResumeEditor 
-    v-if="designData" 
-    :designData="designData" 
-    :onUpdate="handleJsonResumeUpdate" 
+  <JsonResumeEditor
+    v-if="designData"
+    :designData="designData"
+    :onUpdate="handleJsonResumeUpdate"
   />
 </template>
 
@@ -54,10 +54,10 @@ const designData = ref(null) // Store the current design data for JsonResumeEdit
 // Data sanitization utility to fix null values in Polotno data
 function sanitizePolotnoData(data) {
   if (!data || typeof data !== 'object') return data;
-  
+
   // Deep clone to avoid mutating original data
   const sanitized = JSON.parse(JSON.stringify(data));
-  
+
   // Sanitize pages and their children
   if (sanitized.pages && Array.isArray(sanitized.pages)) {
     sanitized.pages.forEach(page => {
@@ -76,20 +76,38 @@ function sanitizePolotnoData(data) {
           if (child.src === null || child.src === undefined) {
             delete child.src; // Remove null src properties
           }
-          // Ensure numeric properties are numbers, not null
+          // Ensure numeric properties are numbers, not null or strings
           ['x', 'y', 'width', 'height', 'fontSize', 'rotation', 'scaleX', 'scaleY'].forEach(prop => {
-            if (child[prop] === null || child[prop] === undefined || isNaN(child[prop])) {
+            if (child[prop] === null || child[prop] === undefined) {
               if (prop === 'fontSize') child[prop] = 16;
               else if (['scaleX', 'scaleY'].includes(prop)) child[prop] = 1;
               else if (prop === 'rotation') child[prop] = 0;
-              else child[prop] = child[prop] || 0;
+              else child[prop] = 0;
+            } else if (typeof child[prop] === 'string') {
+              // Convert string to number
+              const numValue = parseFloat(child[prop]);
+              if (!isNaN(numValue)) {
+                child[prop] = numValue;
+              } else {
+                // Fallback to default values if string is not a valid number
+                if (prop === 'fontSize') child[prop] = 16;
+                else if (['scaleX', 'scaleY'].includes(prop)) child[prop] = 1;
+                else if (prop === 'rotation') child[prop] = 0;
+                else child[prop] = 0;
+              }
+            } else if (isNaN(child[prop])) {
+              // Handle other non-numeric values
+              if (prop === 'fontSize') child[prop] = 16;
+              else if (['scaleX', 'scaleY'].includes(prop)) child[prop] = 1;
+              else if (prop === 'rotation') child[prop] = 0;
+              else child[prop] = 0;
             }
           });
         });
       }
     });
   }
-  
+
   return sanitized;
 }
 
@@ -99,21 +117,21 @@ function compressImageInElements(elements, maxWidth = 200, maxHeight = 200, qual
     if (element.type === 'image' && element.src && element.src.startsWith('data:')) {
       // Check if this is a very large base64 image (likely AI-generated)
       const isLargeImage = element.src.length > 500000; // 500KB base64 string
-      
+
       // Use more aggressive compression for large images
       const targetMaxWidth = isLargeImage ? 150 : maxWidth;
       const targetMaxHeight = isLargeImage ? 150 : maxHeight;
       const targetQuality = isLargeImage ? 0.3 : quality;
-      
+
       // Create a canvas to compress the image
       const canvas = document.createElement('canvas');
       const ctx = canvas.getContext('2d');
       const img = new Image();
-      
+
       return new Promise((resolve) => {
         img.onload = () => {
           let { width, height } = img;
-          
+
           // More aggressive compression for large images
           if (width > height) {
             if (width > targetMaxWidth) {
@@ -126,22 +144,22 @@ function compressImageInElements(elements, maxWidth = 200, maxHeight = 200, qual
               height = targetMaxHeight;
             }
           }
-          
+
           canvas.width = width;
           canvas.height = height;
           ctx.drawImage(img, 0, 0, width, height);
-          
+
           const compressedSrc = canvas.toDataURL('image/jpeg', targetQuality);
           console.log(`Compressed image from ${element.src.length} to ${compressedSrc.length} bytes`);
           resolve({ ...element, src: compressedSrc });
         };
-        
+
         img.onerror = () => {
           // If image fails to load, return element without src
           console.warn('Failed to load image for compression, removing src');
           resolve({ ...element, src: '' });
         };
-        
+
         img.src = element.src;
       });
     }
@@ -153,17 +171,17 @@ function compressImageInElements(elements, maxWidth = 200, maxHeight = 200, qual
 async function saveDesignHandler() {
   if (!polotnoStore) return;
   console.log('💾 Manual save triggered for design:', designName.value);
-  
+
   try {
     const json = polotnoStore.toJSON();
     console.log('💾 Manual save - polotno JSON:', json);
     console.log('💾 Manual save - JSON structure:', JSON.stringify(json, null, 2));
-    
+
     const user = JSON.parse(localStorage.getItem('user') || '{}');
-    
+
     // Prepare the data for saving
     let dataToSave = json;
-    
+
     // If this is a JSON Resume design
     if (designData.value && designData.value.jsonResume) {
       // Update the polotnoElements in the existing data
@@ -172,26 +190,26 @@ async function saveDesignHandler() {
         polotnoElements: json
       };
     }
-    
+
     let payload = {
       id: designId,
       name: designName.value,
       data: dataToSave,
       userId: user.id,
     };
-    
+
     // Proactively compress AI-generated images before size check
     const hasLargeImages = (elements) => {
       return elements.some(el => el.type === 'image' && el.src && el.src.startsWith('data:') && el.src.length > 500000);
     };
-    
+
     let needsCompression = false;
     if (dataToSave.pages && dataToSave.pages[0] && dataToSave.pages[0].children) {
       needsCompression = hasLargeImages(dataToSave.pages[0].children);
     } else if (dataToSave.children) {
       needsCompression = hasLargeImages(dataToSave.children);
     }
-    
+
     // Compress large images proactively
     if (needsCompression) {
       console.warn('Large AI-generated images detected, compressing proactively');
@@ -208,15 +226,15 @@ async function saveDesignHandler() {
       }
       payload.data = dataToSave;
     }
-    
+
     // Check payload size and optimize if needed
      const payloadSize = JSON.stringify(payload).length;
      console.log('Payload size:', payloadSize, 'bytes');
-     
-     // If payload is still too large (> 2MB), try to compress images further
-     if (payloadSize > 2 * 1024 * 1024) {
+
+     // If payload is still too large (> 10MB), try to compress images further
+     if (payloadSize > 10 * 1024 * 1024) {
        console.warn('Payload still too large, attempting additional compression');
-       
+
        // Find and compress images in the design
        if (dataToSave.pages && dataToSave.pages[0] && dataToSave.pages[0].children) {
          const compressedElements = await Promise.all(
@@ -229,14 +247,14 @@ async function saveDesignHandler() {
          );
          dataToSave.children = compressedElements;
        }
-       
+
        payload.data = dataToSave;
-       
+
        const newPayloadSize = JSON.stringify(payload).length;
        console.log('Compressed payload size:', newPayloadSize, 'bytes');
-       
+
        // If still too large after compression, remove images entirely
-       if (newPayloadSize > 3 * 1024 * 1024) {
+       if (newPayloadSize > 10 * 1024 * 1024) {
          console.warn('Still too large after compression, removing all images');
          if (dataToSave.pages && dataToSave.pages[0] && dataToSave.pages[0].children) {
            dataToSave.pages[0].children = dataToSave.pages[0].children.filter(el => el.type !== 'image');
@@ -247,33 +265,33 @@ async function saveDesignHandler() {
          console.log('Final payload size without images:', JSON.stringify(payload).length, 'bytes');
        }
      }
-    
+
     const res = await saveDesign(payload);
     if (res && res.data && res.data.id) {
       designId = res.data.id;
     }
-    
+
     // Update designData for JsonResumeEditor
      designData.value = dataToSave;
-     
+
      // Check if images were removed and notify user
      const finalPayloadSize = JSON.stringify(payload).length;
-     if (payloadSize > 2 * 1024 * 1024 && finalPayloadSize < payloadSize * 0.8) {
+     if (payloadSize > 10 * 1024 * 1024 && finalPayloadSize < payloadSize * 0.8) {
        alert('Design saved! Note: Some images were compressed or removed due to size limitations.');
      } else {
        alert('Design saved!');
      }
   } catch (err) {
     console.error('Failed to save design:', err);
-    
+
     // If it's a 413 error, try removing images entirely
     if (err.message.includes('413') || err.message.includes('Payload Too Large')) {
       try {
         console.warn('Retrying without images due to payload size');
-        
+
         const json = polotnoStore.toJSON();
         const user = JSON.parse(localStorage.getItem('user') || '{}');
-        
+
         // Remove all images from the design
         let dataToSave = json;
         if (dataToSave.pages && dataToSave.pages[0] && dataToSave.pages[0].children) {
@@ -281,19 +299,19 @@ async function saveDesignHandler() {
         } else if (dataToSave.children) {
           dataToSave.children = dataToSave.children.filter(el => el.type !== 'image');
         }
-        
+
         const payload = {
           id: designId,
           name: designName.value,
           data: dataToSave,
           userId: user.id,
         };
-        
+
         const res = await saveDesign(payload);
         if (res && res.data && res.data.id) {
           designId = res.data.id;
         }
-        
+
         designData.value = dataToSave;
         alert('Design saved successfully, but images were too large and were removed. You can add them back manually.');
       } catch (retryErr) {
@@ -310,21 +328,21 @@ async function saveDesignHandler() {
 async function autoSaveDesign(json) {
   console.log('🔄 AutoSave triggered with data:', json);
   console.log('🔄 JSON structure:', JSON.stringify(json, null, 2));
-  
+
   // Check if we have actual content to save
   const hasContent = json && json.pages && json.pages[0] && json.pages[0].children && json.pages[0].children.length > 0;
   console.log('🔄 Has content to save:', hasContent);
-  
+
   if (!hasContent) {
     console.log('⚠️ No content to save, skipping autosave');
     return;
   }
-  
+
   const user = JSON.parse(localStorage.getItem('user') || '{}');
-  
+
   // Prepare the data for saving
   let dataToSave = json;
-  
+
   // If this is a JSON Resume design and we're saving from the Polotno store
   if (designData.value && designData.value.jsonResume && typeof json !== 'object') {
     // We're saving from the Polotno store, so update the polotnoElements in the existing data
@@ -333,21 +351,21 @@ async function autoSaveDesign(json) {
       polotnoElements: json
     };
   }
-  
+
   const payload = {
     id: designId,
     name: designName.value,
     data: dataToSave,
     userId: user.id,
   };
-  
+
   console.log('💾 Saving payload:', JSON.stringify(payload, null, 2));
-  
+
   const res = await saveDesign(payload);
   if (res && res.data && res.data.id) {
     designId = res.data.id;
   }
-  
+
   // Update designData for JsonResumeEditor
   designData.value = dataToSave;
 }
@@ -355,10 +373,10 @@ async function autoSaveDesign(json) {
 // Handle updates from JsonResumeEditor
 function handleJsonResumeUpdate(updatedData) {
   if (!polotnoStore) return;
-  
+
   // Update the design data
   designData.value = updatedData;
-  
+
   // Load the updated Polotno elements into the store
   if (updatedData && updatedData.polotnoElements) {
     // Create a proper structure for the Polotno store
@@ -377,7 +395,7 @@ function handleJsonResumeUpdate(updatedData) {
     // Fallback for regular data
     polotnoStore.loadJSON(updatedData);
   }
-  
+
   // Trigger autosave
   autoSaveDesign(updatedData);
 }
@@ -386,11 +404,11 @@ function handleJsonResumeUpdate(updatedData) {
 onMounted(async () => {
   const width = parseInt(route.query.width) || 1024
   const height = parseInt(route.query.height) || 1024
-  
+
   // Get designId from route if available
   const currentDesignId = route.params.id || null
   designId = currentDesignId
-  
+
   polotnoStore = await renderPolotnoEditor(container.value, width, height, { onAutoSave: autoSaveDesign, designId: currentDesignId })
 
   // If there is a jsonResume query parameter, load it
@@ -400,7 +418,7 @@ onMounted(async () => {
         const jsonResumeData = JSON.parse(route.query.jsonResume);
         console.log('Parsed jsonResume data:', jsonResumeData);
         designData.value = jsonResumeData;
-        
+
         // If there are polotnoElements, load them into the store
         if (jsonResumeData.polotnoElements) {
           console.log('Found polotnoElements:', jsonResumeData.polotnoElements);
@@ -416,15 +434,15 @@ onMounted(async () => {
             ]
           };
           console.log('Loading polotno data:', polotnoData);
-           
+
            // Try loading with loadJSON first
            polotnoStore.loadJSON(polotnoData);
-           
+
            // Add a delay to check if elements are loaded, and if not, add them directly
            setTimeout(() => {
              console.log('After loading - Store pages:', polotnoStore.pages.length);
              console.log('After loading - Active page elements:', polotnoStore.activePage?.children?.length || 0);
-             
+
              // If loadJSON didn't work, try adding elements directly
              if (polotnoStore.activePage && polotnoStore.activePage.children.length === 0) {
                console.log('loadJSON failed, adding elements directly');
@@ -436,7 +454,7 @@ onMounted(async () => {
                    console.error(`Failed to add element ${index}:`, err);
                  }
                });
-               
+
                // Check again after direct addition
                setTimeout(() => {
                  console.log('After direct addition - Active page elements:', polotnoStore.activePage?.children?.length || 0);
@@ -477,13 +495,13 @@ onMounted(async () => {
         } else {
           parsedData = design.data;
         }
-        
+
         // Check if this is a JSON Resume design with polotnoElements
         if (parsedData.polotnoElements) {
           console.log('Loading JSON Resume design with polotnoElements:', parsedData.polotnoElements);
           console.log('Elements array length:', parsedData.polotnoElements.length);
           console.log('First element:', parsedData.polotnoElements[0]);
-          
+
           // The polotnoElements should be an array, but the store expects an object with pages
           // Create a proper structure for the Polotno store
           const polotnoData = {
@@ -499,7 +517,7 @@ onMounted(async () => {
           console.log('Loading polotno data:', polotnoData);
           console.log('Page elements:', polotnoData.pages[0].elements);
           polotnoStore.loadJSON(polotnoData);
-          
+
           // Add a delay to check if elements are loaded
           setTimeout(() => {
             console.log('After loading - Store pages:', polotnoStore.pages.length);
@@ -513,7 +531,7 @@ onMounted(async () => {
               })));
             }
           }, 1000);
-           
+
            // Try adding elements directly if loadJSON didn't work
            setTimeout(() => {
              console.log('Checking if elements loaded, if not, adding them directly...');
@@ -529,7 +547,7 @@ onMounted(async () => {
                console.log('Elements already loaded:', polotnoStore.activePage.children.length);
              }
            }, 2000);
-           
+
             // Add a small delay and check if elements were loaded
             setTimeout(() => {
             console.log('Store pages after loading:', polotnoStore.pages.length);
@@ -545,12 +563,12 @@ onMounted(async () => {
             childrenCount: parsedData.pages?.[0]?.children?.length || 0,
             dataKeys: Object.keys(parsedData)
           });
-          
+
           // Sanitize data before loading to fix null values
           const sanitizedData = sanitizePolotnoData(parsedData);
           console.log('🧹 Sanitized data:', sanitizedData);
           polotnoStore.loadJSON(sanitizedData);
-          
+
           // Add debugging to check if data was loaded correctly
            setTimeout(() => {
              console.log('🔍 After loading regular design:');
@@ -575,11 +593,11 @@ onMounted(async () => {
              }
            }, 1000);
         }
-        
+
         designName.value = design.name || 'Untitled Design';
         isPublic.value = !!design.public;
         designId = design.id;
-        
+
         // Set the design data for JsonResumeEditor
         designData.value = parsedData;
       }

@@ -29,18 +29,6 @@ export const createTemplate = async (req, res, repo) => {
     
     const result = await repo.save(template);
     
-    // Generate preview after saving
-    try {
-      const { generateTemplatePreview } = await import('../../services/previewService.js');
-      const previewData = generateTemplatePreview(result);
-      if (previewData) {
-        result.preview = previewData;
-        await repo.save(result);
-      }
-    } catch (previewError) {
-      console.warn('Failed to generate template preview:', previewError);
-    }
-    
     res.status(201).json({
       data: result,
       message: 'Template created successfully',
@@ -57,20 +45,6 @@ export const updateTemplate = async (req, res, repo) => {
     if (!template) return res.status(404).json({ error: 'Template not found' });
     repo.merge(template, req.body);
     const result = await repo.save(template);
-    
-    // Generate preview after updating if content changed
-    if (req.body.content) {
-      try {
-        const { generateTemplatePreview } = await import('../../services/previewService.js');
-        const previewData = generateTemplatePreview(result);
-        if (previewData) {
-          result.preview = previewData;
-          await repo.save(result);
-        }
-      } catch (previewError) {
-        console.warn('Failed to generate template preview:', previewError);
-      }
-    }
     
     res.status(200).json({
       data: result,

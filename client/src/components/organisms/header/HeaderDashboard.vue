@@ -22,10 +22,17 @@ function loadUserData() {
       const user = JSON.parse(userData);
       console.log('HeaderDashboard: User data found:', user);
       userName.value = user.nom || user.email || 'User';
-      // Construct the full URL for profile photo
+      // Handle profile photo - check if it's a Google photo URL or local upload
       if (user.photoProfil) {
-        userImage.value = `http://localhost:3000/uploads/${user.photoProfil}`;
-        console.log('HeaderDashboard: Profile image URL set to:', userImage.value);
+        if (user.photoProfil.startsWith('http')) {
+          // Google profile photo or other external URL
+          userImage.value = user.photoProfil;
+          console.log('HeaderDashboard: Using external profile image URL:', userImage.value);
+        } else {
+          // Local uploaded photo
+          userImage.value = `http://localhost:3000/uploads/${user.photoProfil}`;
+          console.log('HeaderDashboard: Using local profile image URL:', userImage.value);
+        }
       } else {
         console.log('HeaderDashboard: No profile photo found, using default');
         userImage.value = 'https://images.ctfassets.net/h6goo9gw1hh6/2sNZtFAWOdP1lmQ33VwRN3/24e953b920a9cd0ff2e1d587742a2472/1-intro-photo-final.jpg?w=1200&h=992&fl=progressive&q=70&fm=jpg';

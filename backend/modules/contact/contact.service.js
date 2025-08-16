@@ -66,29 +66,53 @@ export const sendContactEmail = async ({ name, email, message }) => {
     return;
   }
 
-  // Create transporter
-  const transporter = nodemailer.createTransporter({
-    service: 'gmail',
-    auth: {
-      user: process.env.EMAIL_USER,
-      pass: process.env.EMAIL_PASS,
-    },
-  });
+  try {
+    console.log('=== ATTEMPTING TO SEND REAL EMAIL ===');
+    console.log('EMAIL_USER:', process.env.EMAIL_USER);
+    console.log('EMAIL_PASS configured:', !!process.env.EMAIL_PASS);
+    
+    // Create transporter
+    const transporter = nodemailer.createTransport({
+      service: 'gmail',
+      auth: {
+        user: process.env.EMAIL_USER,
+        pass: process.env.EMAIL_PASS,
+      },
+    });
 
-  // Email options
-  const mailOptions = {
-    from: email,
-    to: process.env.EMAIL_USER,
-    subject: `Contact Form Message from ${name}`,
-    text: `
-      Name: ${name}
-      Email: ${email}
-      Message: ${message}
-    `,
-  };
+    // Email options
+    const mailOptions = {
+      from: process.env.EMAIL_USER, // Use authenticated email as sender
+      replyTo: email, // Set reply-to as the contact form sender
+      to: process.env.EMAIL_USER,
+      subject: `Contact Form Message from ${name}`,
+      text: `
+        Name: ${name}
+        Email: ${email}
+        Message: ${message}
+      `,
+      html: `
+        <h3>New Contact Form Message</h3>
+        <p><strong>Name:</strong> ${name}</p>
+        <p><strong>Email:</strong> ${email}</p>
+        <p><strong>Message:</strong></p>
+        <p>${message.replace(/\n/g, '<br>')}</p>
+      `,
+    };
 
-  // Send email
-  await transporter.sendMail(mailOptions);
+    // Send email
+    const result = await transporter.sendMail(mailOptions);
+    console.log('=== EMAIL SENT SUCCESSFULLY ===');
+    console.log('Message ID:', result.messageId);
+    console.log('Response:', result.response);
+    console.log('================================');
+  } catch (error) {
+    console.error('=== EMAIL SENDING FAILED ===');
+    console.error('Error:', error.message);
+    console.error('Full error:', error);
+    console.error('============================');
+    throw error; // Re-throw to let the controller handle it
+  }
 };
 
 // Get testimonials for public display

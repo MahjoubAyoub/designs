@@ -12,7 +12,7 @@ export const AppDataSource = new DataSource({
   username: 'root',
   password: '',
   database: 'canvas',
-  synchronize: true,
+  synchronize: false, // Disabled to prevent data loss on restart
   logging: true,
   entities: [DesignModel,userModel,templateModal,testimonialModel],
 });

@@ -77,10 +77,17 @@ async function loadUserProfile() {
       gender: profile.gender || 'male'
     }
 
-    // Set profile photo preview
+    // Set profile photo preview - handle both Google photos and local uploads
     if (profile.photoProfil) {
-      profilePhotoPreview.value = `http://localhost:3000/uploads/${profile.photoProfil}`
-      console.log('Profile photo URL set to:', profilePhotoPreview.value)
+      if (profile.photoProfil.startsWith('http')) {
+        // Google profile photo or other external URL
+        profilePhotoPreview.value = profile.photoProfil
+        console.log('Using external profile photo URL:', profilePhotoPreview.value)
+      } else {
+        // Local uploaded photo
+        profilePhotoPreview.value = `http://localhost:3000/uploads/${profile.photoProfil}`
+        console.log('Using local profile photo URL:', profilePhotoPreview.value)
+      }
     } else {
       console.log('No profile photo found in user data')
     }
@@ -231,7 +238,13 @@ onMounted(() => {
   // Check if there's already a profile photo in localStorage
   const user = getCurrentUser()
   if (user && user.photoProfil) {
-    profilePhotoPreview.value = `http://localhost:3000/uploads/${user.photoProfil}`
+    if (user.photoProfil.startsWith('http')) {
+      // Google profile photo or other external URL
+      profilePhotoPreview.value = user.photoProfil
+    } else {
+      // Local uploaded photo
+      profilePhotoPreview.value = `http://localhost:3000/uploads/${user.photoProfil}`
+    }
   }
 })
 </script>

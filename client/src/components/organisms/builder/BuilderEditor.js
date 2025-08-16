@@ -24,7 +24,7 @@ import { AiGeneratorSection } from './BuilderAI'
 const PolotnoEditor = ({ width = 1024, height = 1024, storeRef, onAutoSave, initialData, designId } = {}) => {
   const store = createStore({
     key: 'nFA5H9elEytDyPyvKL7T',
-    showCredit: true,
+    showCredit: false,
   })
   store.addPage()
   store.setSize(width, height)
@@ -87,7 +87,7 @@ const PolotnoEditor = ({ width = 1024, height = 1024, storeRef, onAutoSave, init
         [
           React.createElement(Toolbar, {
             store,
-            components: { 
+            components: {
               ActionControls: (props) => React.createElement(CustomDownloadButton, { ...props, designId })
             },
             key: 'toolbar',

@@ -7,14 +7,14 @@
       <!-- Title -->
       <div class="mt-5 max-w-xl text-center mx-auto">
         <h1 class="block font-bold text-gray-800 text-4xl md:text-5xl lg:text-6xl">
-          Supercharged <span class="text-primary">Preline</span> Experience
+          Build your dream <span class="text-primary">Design</span> effortlessly
         </h1>
       </div>
       <!-- End Title -->
 
       <div class="mt-5 max-w-3xl text-center mx-auto">
-        <p class="text-lg text-gray-600 dark:text-neutral-400">
-          Lorem ipsum dolor sit amet, consectetur adipisicing elit.
+        <p class="text-lg text-gray-600 dark:text-neutral-400 pt-4 lg:text-xl">
+          Where Creativity Meets Simplicity.
         </p>
       </div>
 
