@@ -29,6 +29,7 @@ router.post('/save', async (req, res) => {
   if (id) {
     // Update existing design
     req.params = { id };
+    req.body = { id, ...data }; // Ensure the full body is available for updateDesign
     return updateDesign(req, res, repo);
   } else {
     // Create new design

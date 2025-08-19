@@ -52,7 +52,7 @@ export async function uploadCustomTemplate(templateData, mediaFiles = [], design
   try {
     // Create FormData for multipart upload
     const formData = new FormData()
-    
+
     // Add template metadata
     formData.append('name', templateData.name || 'Custom Template')
     formData.append('description', templateData.description || '')
@@ -60,21 +60,21 @@ export async function uploadCustomTemplate(templateData, mediaFiles = [], design
     formData.append('type', templateData.type || 'design')
     formData.append('theme', templateData.theme || '')
     formData.append('public', templateData.public || true)
-    
+
     // Add design data if provided
     if (designData) {
       formData.append('templateData', JSON.stringify(designData))
     }
-    
+
     // Add media files
     mediaFiles.forEach((file, index) => {
       formData.append('media', file)
     })
-    
+
     // Upload template
     const result = await uploadTemplateWithMedia(formData)
     return result
-    
+
   } catch (error) {
     console.error('Template upload error:', error)
     throw new Error(`Failed to upload template: ${error.message}`)
@@ -89,24 +89,24 @@ export async function uploadCustomTemplate(templateData, mediaFiles = [], design
 export async function getAvailableTemplates(filters = {}) {
   try {
     const templates = await getAllTemplates()
-    
+
     // Apply filters if provided
     let filteredTemplates = templates
-    
+
     if (filters.type) {
       filteredTemplates = filteredTemplates.filter(t => t.type === filters.type)
     }
-    
+
     if (filters.category) {
       filteredTemplates = filteredTemplates.filter(t => t.category === filters.category)
     }
-    
+
     if (filters.public !== undefined) {
       filteredTemplates = filteredTemplates.filter(t => t.public === filters.public)
     }
-    
+
     return filteredTemplates
-    
+
   } catch (error) {
     console.error('Error fetching templates:', error)
     throw new Error(`Failed to fetch templates: ${error.message}`)
@@ -121,11 +121,11 @@ export async function getAvailableTemplates(filters = {}) {
 export async function loadTemplateWithMedia(templateId) {
   try {
     const template = await getTemplateById(templateId)
-    
+
     if (!template) {
       throw new Error('Template not found')
     }
-    
+
     // Process media files to create accessible URLs
     if (template.content && template.content.mediaFiles) {
       template.content.mediaFiles = template.content.mediaFiles.map(file => ({
@@ -134,9 +134,9 @@ export async function loadTemplateWithMedia(templateId) {
         previewUrl: file.mimetype.startsWith('image/') ? `/uploads/${file.filename}` : null
       }))
     }
-    
+
     return template
-    
+
   } catch (error) {
     console.error('Error loading template:', error)
     throw new Error(`Failed to load template: ${error.message}`)
@@ -154,7 +154,7 @@ export function createDesignFromTemplate(template, customizations = {}) {
     // Handle width and height - convert "auto" to numeric values
     let templateWidth = template.content?.width
     let templateHeight = template.content?.height
-    
+
     // If width/height are "auto" or invalid, use defaults based on template category
     if (templateWidth === "auto" || !templateWidth || isNaN(Number(templateWidth))) {
       templateWidth = getDefaultWidth(template.category)
@@ -162,7 +162,7 @@ export function createDesignFromTemplate(template, customizations = {}) {
     if (templateHeight === "auto" || !templateHeight || isNaN(Number(templateHeight))) {
       templateHeight = getDefaultHeight(template.category)
     }
-    
+
     const designData = {
       name: customizations.name || `${template.name} - Copy`,
       width: customizations.width || Number(templateWidth) || 595,
@@ -170,16 +170,24 @@ export function createDesignFromTemplate(template, customizations = {}) {
       elements: [],
       mediaFiles: []
     }
-    
+
     // Process template content
     if (template.content) {
-      // Add template elements
+      // Add template elements with unique identifiers to differentiate from template
       if (template.content.polotnoElements) {
-        designData.elements = Array.isArray(template.content.polotnoElements) 
-          ? template.content.polotnoElements 
+        const elements = Array.isArray(template.content.polotnoElements)
+          ? template.content.polotnoElements
           : []
+
+        // Add unique identifiers and timestamp to each element to ensure different previews
+        designData.elements = elements.map((element, index) => ({
+          ...element,
+          id: `design-${Date.now()}-${index}`, // Unique ID based on timestamp
+          createdFromTemplate: template.id || template.name, // Track template source
+          createdAt: new Date().toISOString() // Creation timestamp
+        }))
       }
-      
+
       // Add media files with accessible URLs
       if (template.content.mediaFiles) {
         designData.mediaFiles = template.content.mediaFiles.map(file => ({
@@ -187,16 +195,16 @@ export function createDesignFromTemplate(template, customizations = {}) {
           url: `/uploads/${file.filename}`
         }))
       }
-      
+
       // Add JSON Resume data if available
       if (template.content.jsonResume) {
         designData.jsonResume = template.content.jsonResume
         designData.theme = template.theme
       }
     }
-    
+
     return designData
-    
+
   } catch (error) {
     console.error('Error creating design from template:', error)
     throw new Error(`Failed to create design from template: ${error.message}`)
@@ -212,33 +220,33 @@ export function validateUploadedFiles(files) {
   const maxFileSize = 10 * 1024 * 1024 // 10MB
   const allowedTypes = [
     'image/jpeg',
-    'image/jpg', 
+    'image/jpg',
     'image/png',
     'image/gif',
     'image/svg+xml',
     'application/json',
     'text/plain'
   ]
-  
+
   const validFiles = []
   const errors = []
-  
+
   files.forEach((file, index) => {
     // Check file size
     if (file.size > maxFileSize) {
       errors.push(`File "${file.name}" is too large (max 10MB)`)
       return
     }
-    
+
     // Check file type
     if (!allowedTypes.includes(file.type)) {
       errors.push(`File "${file.name}" has unsupported type (${file.type})`)
       return
     }
-    
+
     validFiles.push(file)
   })
-  
+
   return {
     validFiles,
     errors,
@@ -253,11 +261,11 @@ export function validateUploadedFiles(files) {
  */
 export function formatFileSize(bytes) {
   if (bytes === 0) return '0 Bytes'
-  
+
   const k = 1024
   const sizes = ['Bytes', 'KB', 'MB', 'GB']
   const i = Math.floor(Math.log(bytes) / Math.log(k))
-  
+
   return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i]
 }
 
@@ -284,11 +292,11 @@ export function importTemplate(templateData) {
   if (!templateData.name) {
     throw new Error('Template name is required')
   }
-  
+
   if (!templateData.content) {
     throw new Error('Template content is required')
   }
-  
+
   return {
     name: templateData.name,
     description: templateData.description || '',

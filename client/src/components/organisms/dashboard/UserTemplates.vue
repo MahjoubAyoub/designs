@@ -11,7 +11,7 @@
       <div class="inline-block animate-spin rounded-full h-6 w-6 border-b-2 border-blue-600 mb-2"></div>
       <p>Loading your templates...</p>
     </div>
-    
+
     <!-- Error State -->
     <div v-else-if="error" class="text-center text-red-500 py-8">
       <p class="mb-2">{{ error }}</p>
@@ -19,7 +19,7 @@
         Retry
       </button>
     </div>
-    
+
     <!-- No Templates -->
     <div v-else-if="userTemplates.length === 0" class="text-center text-gray-500 py-8">
       <p class="mb-4">You haven't created any templates yet.</p>
@@ -27,7 +27,7 @@
         Create Your First Template
       </router-link>
     </div>
-    
+
     <!-- Templates Grid -->
     <div v-else class="space-y-4">
       <!-- Generate Previews Button -->
@@ -44,26 +44,27 @@
           {{ generatingPreviews ? `Generating... (${previewProgress.current}/${previewProgress.total})` : 'Generate Missing Previews' }}
         </button>
       </div>
-      
+
       <div class="grid sm:grid-cols-2 lg:grid-cols-3 gap-4">
-        <div 
-          v-for="template in userTemplates" 
-          :key="template.id" 
+        <div
+          v-for="template in userTemplates"
+          :key="template.id"
           class="relative cursor-pointer rounded-lg border border-gray-200 p-4 hover:border-blue-500 hover:bg-blue-50 transition-colors"
           @click="useTemplate(template)"
         >
           <div class="flex flex-col h-full">
             <!-- Template Preview -->
             <div class="w-full h-32 mb-3 rounded-lg overflow-hidden border-2 border-gray-200">
-              <img 
+              <img
                 v-if="template.preview && template.preview !== ''"
                 :src="template.preview"
-                :alt="template.name + ' preview'" 
+                :alt="template.name + ' preview'"
                 class="w-full h-full object-cover"
-                @error="handleImageError"
+                @error="handleImageError(template, $event)"
+                @load="(e) => console.log('✅ Template preview loaded successfully:', template.name, e.target.naturalWidth + 'x' + e.target.naturalHeight)"
               />
-              <div 
-                v-else 
+              <div
+                v-else
                 class="w-full h-full bg-gray-100 flex items-center justify-center text-gray-400"
               >
                 <div class="text-center">
@@ -74,12 +75,12 @@
                 </div>
               </div>
             </div>
-            
+
             <!-- Template Info -->
             <div class="flex-1">
               <h3 class="font-medium text-gray-900 mb-1 truncate">{{ template.name }}</h3>
               <p class="text-sm text-gray-500 mb-2 line-clamp-2">{{ template.description || 'No description' }}</p>
-              
+
               <!-- Template Meta -->
               <div class="flex items-center justify-between text-xs text-gray-400">
                 <span class="px-2 py-1 bg-gray-100 rounded-full">{{ template.category || 'General' }}</span>
@@ -99,7 +100,7 @@ import { useRouter } from 'vue-router'
 import { getAllTemplates, updateTemplate } from '@/api/templates.js'
 import { createDesignFromTemplate } from '@/services/templateService.js'
 import { saveDesign } from '@/api/designs.js'
-import { generatePolotnoPreviewFromData } from '@/services/polotnoPreviewService.js'
+import { generatePolotnoPreviewFromData, generatePolotnoPreviewById } from '@/services/polotnoPreviewService.js'
 
 const router = useRouter()
 const userTemplates = ref([])
@@ -108,23 +109,35 @@ const error = ref(null)
 const generatingPreviews = ref(false)
 const previewProgress = ref({ current: 0, total: 0 })
 
-// Fetch user templates
 async function fetchUserTemplates() {
   try {
     isLoading.value = true
     error.value = null
-    
+
     const user = JSON.parse(localStorage.getItem('user') || '{}')
     if (!user.id) {
       error.value = 'Please log in to view your templates'
       return
     }
-    
-    // Get all templates and filter by current user and public templates
+
     const allTemplates = await getAllTemplates()
-    userTemplates.value = allTemplates.filter(template => 
+    userTemplates.value = allTemplates.filter(template =>
       template.public === true || (template.user && template.user.id === user.id)
     )
+
+    console.log('📋 Templates fetched:', userTemplates.value.length)
+    userTemplates.value.forEach((template, index) => {
+      console.log(`Template ${index + 1}:`, {
+        id: template.id,
+        name: template.name,
+        preview: template.preview,
+        hasPreview: !!template.preview,
+        previewType: typeof template.preview,
+        previewLength: template.preview?.length,
+        previewPrefix: template.preview?.substring(0, 100) + '...',
+        isValidDataUrl: template.preview?.startsWith('data:image/')
+      })
+    })
   } catch (err) {
     console.error('Failed to fetch user templates:', err)
     error.value = 'Failed to load your templates. Please try again.'
@@ -134,7 +147,6 @@ async function fetchUserTemplates() {
   }
 }
 
-// Use a template to create a new design
 async function useTemplate(template) {
   try {
     const user = JSON.parse(localStorage.getItem('user') || '{}')
@@ -142,13 +154,11 @@ async function useTemplate(template) {
       alert('Please log in to use templates')
       return
     }
-    
-    // Create design data from template
+
     const designData = createDesignFromTemplate(template, {
       name: `${template.name} - Copy`
     })
-    
-    // Save the new design
+
     const saveData = {
       name: `Design from ${template.name}`,
       data: {
@@ -165,10 +175,27 @@ async function useTemplate(template) {
       userId: user.id,
       public: true,
     }
-    
+
     const response = await saveDesign(saveData)
     if (response && response.data && response.data.id) {
-      // Navigate to the editor with the new design
+      try {
+        const previewDataUrl = await generatePolotnoPreviewById(response.data.id, 400, 300, { forceRefresh: true })
+        if (previewDataUrl) {
+          const updateData = {
+            id: response.data.id,
+            name: saveData.name,
+            public: saveData.public,
+            data: saveData.data,
+            imageUrl: previewDataUrl,
+            userId: saveData.userId
+          }
+          await saveDesign(updateData)
+          console.log(`✓ Preview generated for new design: ${saveData.name}`)
+        }
+      } catch (previewError) {
+        console.error('Failed to generate preview for new design:', previewError)
+      }
+
       router.push(`/create/${response.data.id}`)
     }
   } catch (error) {
@@ -177,28 +204,23 @@ async function useTemplate(template) {
   }
 }
 
-// Handle image loading errors
-function handleImageError(event) {
-  const img = event.target
-  const fallback = img.nextElementSibling
-  if (fallback) {
-    img.style.display = 'none'
-    fallback.style.display = 'flex'
+async function generateSingleTemplatePreview(template) {
+  try {
+    const previewDataUrl = await generatePolotnoPreviewFromData(template.content, 400, 300, { forceRefresh: true })
+    if (previewDataUrl) {
+      const updateData = { preview: previewDataUrl }
+      await updateTemplate(template.id, updateData)
+      template.preview = previewDataUrl
+      console.log(`✓ Preview generated for template: ${template.name}`)
+    }
+  } catch (error) {
+    console.error(`Error generating preview for template ${template.name}:`, error)
   }
 }
 
-// Format date for display
-function formatDate(dateString) {
-  if (!dateString) return 'Unknown'
-  return new Date(dateString).toLocaleDateString()
-}
-
-// Generate missing previews for templates
 async function generateMissingPreviews() {
   const templatesWithoutPreviews = userTemplates.value.filter(t => !t.preview || t.preview === '')
-
   if (templatesWithoutPreviews.length === 0) {
-    alert('All templates already have previews!')
     return
   }
 
@@ -207,55 +229,59 @@ async function generateMissingPreviews() {
 
   try {
     for (const template of templatesWithoutPreviews) {
-      try {
-        console.log(`Generating preview for template: ${template.name}`)
-
-        // Generate preview using the frontend service with template data
-        const previewDataUrl = await generatePolotnoPreviewFromData(template, 400, 300)
-
-        if (previewDataUrl) {
-          // Update the template with the new preview
-          const updateData = {
-            id: template.id,
-            name: template.name,
-            description: template.description,
-            category: template.category,
-            content: template.content,
-            preview: previewDataUrl,
-            public: template.public
-          }
-
-          await updateTemplate(template.id, updateData)
-
-          // Update local data
-          template.preview = previewDataUrl
-
-          console.log(`✓ Preview generated for: ${template.name}`)
-        } else {
-          console.log(`⚠ Failed to generate preview for: ${template.name}`)
-        }
-      } catch (error) {
-        console.error(`Error generating preview for ${template.name}:`, error)
-      }
-
       previewProgress.value.current++
-
-      // Add a small delay to prevent overwhelming the browser
+      await generateSingleTemplatePreview(template)
       await new Promise(resolve => setTimeout(resolve, 100))
     }
-
-    alert('Preview generation completed!')
+    alert('Template preview generation completed!')
   } catch (error) {
-    console.error('Error in batch preview generation:', error)
-    alert('Some previews failed to generate. Check console for details.')
+    console.error('Error in batch template preview generation:', error)
+    alert('Some template previews failed to generate.')
   } finally {
     generatingPreviews.value = false
     previewProgress.value = { current: 0, total: 0 }
   }
 }
 
+async function handleImageError(template, event) {
+  const img = event.target
+  const fallback = img.nextElementSibling
+
+  console.error('🖼️ Template preview image failed to load:', {
+    src: img.src,
+    srcLength: img.src?.length,
+    srcPrefix: img.src?.substring(0, 50) + '...',
+    naturalWidth: img.naturalWidth,
+    naturalHeight: img.naturalHeight,
+    templateId: template.id,
+    templateName: template.name,
+    error: event
+  })
+
+  if (fallback) {
+    img.style.display = 'none'
+    fallback.style.display = 'flex'
+  }
+
+  // Retry preview generation
+  try {
+    const previewDataUrl = await generatePolotnoPreviewFromData(template.content, 400, 300, { forceRefresh: true })
+    if (previewDataUrl) {
+      await updateTemplate(template.id, { preview: previewDataUrl })
+      template.preview = previewDataUrl
+      console.log(`✓ Regenerated preview for template: ${template.name}`)
+    }
+  } catch (error) {
+    console.error(`Failed to regenerate preview for template ${template.name}:`, error)
+  }
+}
+
+function formatDate(dateString) {
+  if (!dateString) return 'Unknown'
+  return new Date(dateString).toLocaleDateString()
+}
+
 onMounted(() => {
   fetchUserTemplates()
 })
 </script>
-

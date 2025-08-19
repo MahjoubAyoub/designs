@@ -21,6 +21,7 @@ import { renderPolotnoEditor } from './renderPolotnoEditor.js'
 import { saveDesign, getDesignById } from '@/api/designs.js'
 import BuilderHeader from './BuilderHeader.vue'
 import JsonResumeEditor from '@/components/organisms/builder/JsonResumeEditor.vue'
+import { generatePolotnoPreviewById } from '@/services/polotnoPreviewService.js'
 
 const container = ref(null)
 const route = useRoute()
@@ -179,15 +180,15 @@ async function saveDesignHandler() {
 
     const user = JSON.parse(localStorage.getItem('user') || '{}');
 
-    // Prepare the data for saving
-    let dataToSave = json;
+    // Prepare the data for saving - create a deep copy to avoid read-only property errors
+    let dataToSave = JSON.parse(JSON.stringify(json));
 
     // If this is a JSON Resume design
     if (designData.value && designData.value.jsonResume) {
       // Update the polotnoElements in the existing data
       dataToSave = {
-        ...designData.value,
-        polotnoElements: json
+        ...JSON.parse(JSON.stringify(designData.value)),
+        polotnoElements: JSON.parse(JSON.stringify(json))
       };
     }
 
@@ -269,6 +270,26 @@ async function saveDesignHandler() {
     const res = await saveDesign(payload);
     if (res && res.data && res.data.id) {
       designId = res.data.id;
+      
+      // Generate preview for the saved design
+      try {
+        const previewDataUrl = await generatePolotnoPreviewById(res.data.id, 400, 300);
+        if (previewDataUrl) {
+          // Update the design with the generated preview
+          const updateData = {
+            id: res.data.id,
+            name: designName.value,
+            data: dataToSave,
+            imageUrl: previewDataUrl,
+            userId: payload.userId
+          };
+          await saveDesign(updateData);
+          console.log(`✓ Preview generated for design: ${designName.value}`);
+        }
+      } catch (previewError) {
+        console.error('Failed to generate preview for saved design:', previewError);
+        // Don't block the save process if preview generation fails
+      }
     }
 
     // Update designData for JsonResumeEditor
@@ -292,8 +313,8 @@ async function saveDesignHandler() {
         const json = polotnoStore.toJSON();
         const user = JSON.parse(localStorage.getItem('user') || '{}');
 
-        // Remove all images from the design
-        let dataToSave = json;
+        // Remove all images from the design - create a deep copy to avoid read-only property errors
+        let dataToSave = JSON.parse(JSON.stringify(json));
         if (dataToSave.pages && dataToSave.pages[0] && dataToSave.pages[0].children) {
           dataToSave.pages[0].children = dataToSave.pages[0].children.filter(el => el.type !== 'image');
         } else if (dataToSave.children) {
@@ -340,15 +361,15 @@ async function autoSaveDesign(json) {
 
   const user = JSON.parse(localStorage.getItem('user') || '{}');
 
-  // Prepare the data for saving
-  let dataToSave = json;
+  // Prepare the data for saving - create a deep copy to avoid read-only property errors
+  let dataToSave = JSON.parse(JSON.stringify(json));
 
   // If this is a JSON Resume design and we're saving from the Polotno store
   if (designData.value && designData.value.jsonResume && typeof json !== 'object') {
     // We're saving from the Polotno store, so update the polotnoElements in the existing data
     dataToSave = {
-      ...designData.value,
-      polotnoElements: json
+      ...JSON.parse(JSON.stringify(designData.value)),
+      polotnoElements: JSON.parse(JSON.stringify(json))
     };
   }
 
@@ -363,7 +384,30 @@ async function autoSaveDesign(json) {
 
   const res = await saveDesign(payload);
   if (res && res.data && res.data.id) {
+    const isNewDesign = !designId; // Check if this is a new design
     designId = res.data.id;
+    
+    // Generate preview only for new designs to avoid generating on every autosave
+    if (isNewDesign) {
+      try {
+        const previewDataUrl = await generatePolotnoPreviewById(res.data.id, 400, 300);
+        if (previewDataUrl) {
+          // Update the design with the generated preview
+          const updateData = {
+            id: res.data.id,
+            name: designName.value,
+            data: dataToSave,
+            imageUrl: previewDataUrl,
+            userId: payload.userId
+          };
+          await saveDesign(updateData);
+          console.log(`✓ Preview generated for new design: ${designName.value}`);
+        }
+      } catch (previewError) {
+        console.error('Failed to generate preview for new design:', previewError);
+        // Don't block the autosave process if preview generation fails
+      }
+    }
   }
 
   // Update designData for JsonResumeEditor

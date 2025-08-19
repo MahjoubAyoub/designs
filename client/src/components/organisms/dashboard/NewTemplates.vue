@@ -177,24 +177,24 @@
 
             <div v-else class="space-y-4">
       <div class="grid sm:grid-cols-2 lg:grid-cols-3 gap-4">
-        <div 
-          v-for="template in userTemplates" 
-          :key="template.id" 
+        <div
+          v-for="template in userTemplates"
+          :key="template.id"
           class="relative cursor-pointer rounded-lg border border-gray-200 p-4 hover:border-blue-500 hover:bg-blue-50 transition-colors"
           @click="useTemplate(template)"
         >
           <div class="flex flex-col h-full">
             <!-- Template Preview -->
             <div class="w-full h-32 mb-3 rounded-lg overflow-hidden border-2 border-gray-200">
-              <img 
+              <img
                 v-if="template.preview && template.preview !== ''"
                 :src="template.preview"
-                :alt="template.name + ' preview'" 
+                :alt="template.name + ' preview'"
                 class="w-full h-full object-cover"
                 @error="handleImageError"
               />
-              <div 
-                v-else 
+              <div
+                v-else
                 class="w-full h-full bg-gray-100 flex items-center justify-center text-gray-400"
               >
                 <div class="text-center">
@@ -205,12 +205,12 @@
                 </div>
               </div>
             </div>
-            
+
             <!-- Template Info -->
             <div class="flex-1">
               <h3 class="font-medium text-gray-900 mb-1 truncate">{{ template.name }}</h3>
               <p class="text-sm text-gray-500 mb-2 line-clamp-2">{{ template.description || 'No description' }}</p>
-              
+
               <!-- Template Meta -->
               <div class="flex items-center justify-between text-xs text-gray-400">
                 <span class="px-2 py-1 bg-gray-100 rounded-full">{{ template.category || 'General' }}</span>
@@ -221,7 +221,7 @@
         </div>
       </div>
     </div>
-          </div>
+  </div>
 
           <!-- Public Designs Tab -->
           <div
@@ -254,14 +254,6 @@
                 <h3 class="text-md font-medium text-gray-800 dark:text-neutral-200">
                   Select a Public Template
                 </h3>
-                <button
-                  v-if="publicDesigns.some(d => !d.imageUrl)"
-                  @click="generatePublicPreviews"
-                  :disabled="generatingPublicPreviews"
-                  class="text-sm bg-blue-600 text-white px-3 py-1 rounded hover:bg-blue-700 disabled:opacity-50"
-                >
-                  {{ generatingPublicPreviews ? 'Generating...' : 'Generate Missing Previews' }}
-                </button>
               </div>
 
               <div class="grid sm:grid-cols-3 gap-4">
@@ -286,7 +278,7 @@
                         <div>No Preview</div>
                       </div>
                     </div>
-                    
+
                     <!-- Design Info -->
                     <div class="text-center">
                       <div class="font-semibold text-sm text-gray-800 dark:text-neutral-200 mb-1">
@@ -363,7 +355,7 @@ async function handleSubmit() {
       width = size?.width || 0
       height = size?.height || 0
     }
-    
+
     // Create a proper empty design with full Polotno JSON structure
     try {
       const user = JSON.parse(localStorage.getItem('user') || '{}')
@@ -371,7 +363,7 @@ async function handleSubmit() {
         alert('Please log in to create designs')
         return
       }
-      
+
       // Create empty design with proper Polotno JSON structure
       const emptyDesignData = {
         name: name.value || 'Untitled Design',
@@ -390,7 +382,7 @@ async function handleSubmit() {
         userId: user.id,
         public: false
       }
-      
+
       const response = await saveDesign(emptyDesignData)
       if (response && response.data && response.data.id) {
         // Navigate to the editor with the new design ID
@@ -404,12 +396,10 @@ async function handleSubmit() {
   }
 }
 
-// Generate preview for a single template
-// Generate preview for a single design using design ID
 async function generateSingleDesignPreview(design) {
   try {
     const previewDataUrl = await generatePolotnoPreviewById(design.id, 400, 300)
-
+    console.log('Preview size (bytes):', previewDataUrl.length);
     if (previewDataUrl) {
       // Update design with preview
       const updateData = {
@@ -436,7 +426,6 @@ async function generatePublicPreviews() {
   const designsWithoutPreviews = publicDesigns.value.filter(d => !d.imageUrl)
 
   if (designsWithoutPreviews.length === 0) {
-    alert('All designs already have previews!')
     return
   }
 
@@ -448,7 +437,6 @@ async function generatePublicPreviews() {
       // Add a small delay
       await new Promise(resolve => setTimeout(resolve, 100))
     }
-    alert('Preview generation completed!')
   } catch (error) {
     console.error('Error in batch preview generation:', error)
     alert('Some previews failed to generate.')
@@ -492,7 +480,7 @@ async function fetchPublicDesigns() {
     publicError.value = null
     const designs = await getPublicDesigns()
     publicDesigns.value = designs
-    
+
     // Debug: Log design data to see what preview data they contain
     console.log('🎨 Public designs fetched:', publicDesigns.value.length)
     publicDesigns.value.forEach((design, index) => {
@@ -527,7 +515,7 @@ async function fetchUserTemplates() {
     userTemplates.value = allTemplates.filter(template =>
       template.public === true || (template.user && template.user.id === user.id)
     )
-    
+
     // Debug: Log template data to see what preview data they contain
     console.log('📋 Templates fetched:', userTemplates.value.length)
     userTemplates.value.forEach((template, index) => {
@@ -536,7 +524,10 @@ async function fetchUserTemplates() {
         name: template.name,
         preview: template.preview,
         hasPreview: !!template.preview,
-        previewType: typeof template.preview
+        previewType: typeof template.preview,
+        previewLength: template.preview?.length,
+        previewPrefix: template.preview?.substring(0, 100) + '...',
+        isValidDataUrl: template.preview?.startsWith('data:image/')
       })
     })
   } catch (error) {
@@ -558,8 +549,21 @@ async function handleImport(event) {
 
   try {
     const text = await file.text()
-    const jsonData = JSON.parse(text)
+    let jsonData
+    try {
+      jsonData = JSON.parse(text)
+    } catch (parseError) {
+      console.error('Invalid JSON file:', parseError)
+      alert('Invalid JSON file. Please import a valid template.')
+      return
+    }
 
+    // Validate required fields
+    if (!jsonData.pages?.[0]?.children && !jsonData.polotnoElements) {
+      console.error('Invalid template structure: missing pages or polotnoElements')
+      alert('Invalid template structure. Please import a valid Polotno JSON template.')
+      return
+    }
     // Process the imported data as a template
     const templateData = importTemplate({
       name: jsonData.name || file.name.replace('.json', ''),
@@ -591,23 +595,34 @@ async function handleImport(event) {
     // Generate preview for the new template
     if (response && response.data) {
       const createdTemplate = response.data
-      const previewDataUrl = await generatePolotnoPreviewFromData(createdTemplate, 400, 300)
-      if (previewDataUrl) {
-        await updateTemplate(createdTemplate.id, { preview: previewDataUrl })
-        // Update the local template with the preview
-        createdTemplate.preview = previewDataUrl
+      // Retry preview generation up to 3 times
+      let previewDataUrl = null
+      for (let attempt = 1; attempt <= 3; attempt++) {
+        try {
+          previewDataUrl = await generatePolotnoPreviewFromData(createdTemplate.content, 400, 300, { forceRefresh: true })
+          if (previewDataUrl) {
+            await updateTemplate(createdTemplate.id, { preview: previewDataUrl })
+            createdTemplate.preview = previewDataUrl
+            break
+          }
+        } catch (error) {
+          console.error(`Preview generation attempt ${attempt} failed for template ${createdTemplate.name}:`, error)
+          if (attempt === 3) {
+            console.error('All preview generation attempts failed for template:', createdTemplate.name)
+            alert(`Failed to generate preview for "${createdTemplate.name}". Template imported without preview.`)
+          }
+          await new Promise(resolve => setTimeout(resolve, 500))
+        }
       }
-      
-      // Add the newly created template to the local array immediately
+
       userTemplates.value.unshift(createdTemplate)
-      
-      // Show success message
       alert(`Template "${createdTemplate.name}" imported successfully!`)
     }
 
     // Reset file input
     event.target.value = ''
   } catch (error) {
+    console.error('Failed to import template:', error)
   }
 }
 

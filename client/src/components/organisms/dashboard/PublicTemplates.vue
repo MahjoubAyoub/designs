@@ -16,28 +16,61 @@
       </button>
     </div>
 
-    <!-- Grid -->
-    <div v-else-if="publicDesigns.length > 0" class="grid sm:grid-cols-2 lg:grid-cols-3 gap-6">
-      <div v-for="design in publicDesigns" :key="design.id" class="group flex flex-col h-full bg-white border border-gray-200 shadow-2xs rounded-xl">
-        <div class="h-52 flex justify-center items-center bg-cover bg-center rounded-t-xl" :style="{ backgroundImage: `url(${design.preview || '/placeholder.svg'})` }">
-          <!-- Fallback icon if no image available -->
-          <span class="text-gray-500" v-if="!design.imageUrl">No Image</span>
-        </div>
-        <div class="flex-grow p-4 md:p-6">
-          <h3 class="text-xl font-semibold text-gray-800 dark:text-neutral-300">{{ design.name }}</h3>
-          <p class="mt-3 text-gray-500 dark:text-neutral-500">
-            {{ design.description || 'Description not available' }}
-          </p>
-        </div>
-        <div class="mt-auto flex border-t border-gray-200 divide-x divide-gray-200 dark:border-neutral-700">
-          <a
-            class="w-full py-3 px-4 inline-flex text-sm font-medium bg-white text-gray-800 shadow-2xs hover:bg-gray-50"
-            :href="`/create/${design.id}`"
-          >
-            Use It
-          </a>
-        </div>
+    <!-- Generate Missing Previews Button -->
+    <div v-else-if="publicDesigns.length > 0" class="space-y-4">
+      <div class="flex items-center justify-between mb-4">
+        <h3 class="text-lg font-medium text-gray-800 dark:text-neutral-200">
+          Public Designs
+        </h3>
+        <button
+          v-if="publicDesigns.some(d => !d.preview && !d.imageUrl)"
+          @click="generateMissingPreviews"
+          :disabled="generatingPreviews"
+          class="text-sm bg-blue-600 text-white px-3 py-1 rounded hover:bg-blue-700 disabled:opacity-50"
+        >
+          {{ generatingPreviews ? `Generating... (${previewProgress.current}/${previewProgress.total})` : 'Generate Missing Previews' }}
+        </button>
       </div>
+
+    <!-- Grid -->
+    <div class="grid sm:grid-cols-3 gap-4">
+                <button
+                  v-for="design in publicDesigns"
+                  :key="design.id"
+                  type="button"
+                  class="relative cursor-pointer rounded-lg border border-gray-200 p-4 hover:border-blue-500 hover:bg-blue-50 transition-colors w-full"
+                  @click="copyDesign(design)"
+                >
+                  <div class="flex flex-col items-center">
+                    <!-- Preview Image -->
+                    <div class="w-full h-32 mb-3 bg-gray-100 rounded-lg overflow-hidden flex items-center justify-center">
+                      <img
+                        v-if="design.imageUrl"
+                        :src="design.imageUrl"
+                        :alt="design.name"
+                        class="w-full h-full object-contain"
+                      />
+                      <div v-else class="text-gray-400 text-sm text-center">
+                        <div class="mb-1">📄</div>
+                        <div>No Preview</div>
+                      </div>
+                    </div>
+
+                    <!-- Design Info -->
+                    <div class="text-center">
+                      <div class="font-semibold text-sm text-gray-800 dark:text-neutral-200 mb-1">
+                        {{ design.name }}
+                      </div>
+                      <div class="text-xs text-gray-500 mb-2">
+                        By {{ design.user?.name || `User ${design.user?.id}` || 'Unknown' }}
+                      </div>
+                      <div class="text-xs text-blue-600 font-medium">
+                        Click to use
+                      </div>
+                    </div>
+                  </div>
+                </button>
+              </div>
     </div>
     <!-- No Designs Message -->
     <div v-else class="text-center text-gray-500 py-10">No public designs available.</div>
@@ -50,12 +83,14 @@
 
 <script setup>
 import { ref, onMounted } from 'vue'
-import { getPublicDesigns } from '@/api/designs.js'
-import { generatePolotnoPreviewFromData, generatePolotnoPreviewById, generateBatchPolotnopreviews } from '@/services/polotnoPreviewService.js'
+import { getPublicDesigns, saveDesign } from '@/api/designs.js'
+import { generatePolotnoPreviewFromData, generatePolotnoPreviewById } from '@/services/polotnoPreviewService.js'
 
 const publicDesigns = ref([])
 const isLoading = ref(true)
 const error = ref(null)
+const generatingPreviews = ref(false)
+const previewProgress = ref({ current: 0, total: 0 })
 
 async function fetchPublicDesigns() {
   try {
@@ -116,48 +151,62 @@ async function testPreviewGeneration() {
       }
     }
   } catch (error) {
-    console.error('❌ Test preview generation failed:', error)
+    console.error('Test preview generation failed:', error)
     alert('Test failed! Check console for details.')
   }
 }
 
-// Generate missing previews for designs that don't have them using design IDs
-async function generateMissingPreviews() {
-  console.log('🔄 Starting batch preview generation using design IDs...')
+// Generate preview for a single design
+async function generateSingleDesignPreview(design) {
+  try {
+    const previewDataUrl = await generatePolotnoPreviewById(design.id, 400, 300)
 
-  const designsWithoutPreviews = publicDesigns.value.filter(design => !design.preview)
+    if (previewDataUrl) {
+      // Update design with preview
+      const updateData = {
+        id: design.id,
+        name: design.name,
+        public: design.public,
+        data: design.data,
+        imageUrl: previewDataUrl,
+        userId: design.userId
+      }
+
+      await saveDesign(updateData)
+      design.imageUrl = previewDataUrl
+      design.preview = previewDataUrl
+      console.log(`✓ Preview generated for design: ${design.name}`)
+    }
+  } catch (error) {
+    console.error(`Error generating preview for design ${design.name}:`, error)
+  }
+}
+
+// Generate missing previews for designs that don't have them
+async function generateMissingPreviews() {
+  const designsWithoutPreviews = publicDesigns.value.filter(d => !d.preview && !d.imageUrl)
 
   if (designsWithoutPreviews.length === 0) {
-    alert('All designs already have previews!')
     return
   }
 
-  console.log(`📊 Found ${designsWithoutPreviews.length} designs without previews`)
+  generatingPreviews.value = true
+  previewProgress.value = { current: 0, total: designsWithoutPreviews.length }
 
   try {
-    let successCount = 0
-
     for (const design of designsWithoutPreviews) {
-      try {
-        console.log(`🎨 Generating preview for design ID: ${design.id}`)
-        const previewDataUrl = await generatePolotnoPreviewById(design.id, 400, 300)
-
-        if (previewDataUrl) {
-          design.preview = previewDataUrl
-          successCount++
-          console.log(`✅ Preview generated for design ${design.id}`)
-        } else {
-          console.warn(`⚠️ No preview generated for design ${design.id}`)
-        }
-      } catch (error) {
-        console.error(`❌ Failed to generate preview for design ${design.id}:`, error)
-      }
+      previewProgress.value.current++
+      await generateSingleDesignPreview(design)
+      // Add a small delay to prevent overwhelming the system
+      await new Promise(resolve => setTimeout(resolve, 100))
     }
-
-    alert(`Generated ${successCount} previews successfully out of ${designsWithoutPreviews.length} designs!`)
+    alert('Preview generation completed!')
   } catch (error) {
-    console.error('❌ Batch preview generation failed:', error)
-    alert('Batch generation failed! Check console for details.')
+    console.error('Error in batch preview generation:', error)
+    alert('Some previews failed to generate.')
+  } finally {
+    generatingPreviews.value = false
+    previewProgress.value = { current: 0, total: 0 }
   }
 }
 
