@@ -270,7 +270,7 @@ async function saveDesignHandler() {
     const res = await saveDesign(payload);
     if (res && res.data && res.data.id) {
       designId = res.data.id;
-      
+
       // Generate preview for the saved design
       try {
         const previewDataUrl = await generatePolotnoPreviewById(res.data.id, 400, 300);
@@ -386,7 +386,7 @@ async function autoSaveDesign(json) {
   if (res && res.data && res.data.id) {
     const isNewDesign = !designId; // Check if this is a new design
     designId = res.data.id;
-    
+
     // Generate preview only for new designs to avoid generating on every autosave
     if (isNewDesign) {
       try {

@@ -34,11 +34,9 @@ function handleSave() {
 
 <template>
   <header class="bg-white shadow-sm flex justify-between items-center gap-15 border-b border-gray-300">
-    <router-link
-      class=" border-r border-gray-300 px-10 py-10 rounded-none"
-      to="/dashboard/designs">
-        <BaseIcon class="text-black" name="ChevronLeft" size="25" />
-    </router-link>
+    <BaseButton class="border-0 border-r px-15 py-15 rounded-none" href="/dashboard/designs">
+      <BaseIcon class="text-black" name="ChevronLeft" size="25" />
+    </BaseButton>
     <BaseInput v-model="name" type="text" placeholder="Design Name" class="!w-auto mr-auto border-0 border-b rounded-none py-5 px-5 focus:!ring-0 focus:!outline-0" />
     <div class="flex items-center gap-15">
       <label for="hs-public" class="text-sm text-gray-500">{{ isPublic ? 'Public' : 'Private' }}</label>
