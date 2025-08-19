@@ -43,23 +43,23 @@ const handleSubmit = async () => {
     isSubmitting.value = true
     submitStatus.value = null
     errorMessage.value = ''
-    
+
     // Validate form
     validateForm()
-    
+
     // Prepare data for API
     const contactData = {
       name: `${formData.value.firstName} ${formData.value.lastName}`,
       email: formData.value.email,
       message: `Company: ${formData.value.company}\nWebsite: ${formData.value.website}\n\nMessage:\n${formData.value.message}`
     }
-    
+
     // Send to backend
     await sendContactMessage(contactData)
-    
+
     // Success
     submitStatus.value = 'success'
-    
+
     // Reset form
     formData.value = {
       firstName: '',
@@ -69,7 +69,7 @@ const handleSubmit = async () => {
       website: '',
       message: ''
     }
-    
+
   } catch (error) {
     console.error('Contact form error:', error)
     submitStatus.value = 'error'
@@ -82,7 +82,7 @@ const handleSubmit = async () => {
 
 <template>
   <!-- Hire Us -->
-  <div class="max-w-[85rem] px-4 py-10 sm:px-6 lg:px-8 lg:py-14 mx-auto">
+  <div class="min-h-[calc(100vh_-_139px)] flex items-center max-w-[85rem] py-40 px-15 mx-auto">
     <!-- Grid -->
     <div class="grid md:grid-cols-2 items-center gap-12">
       <div>
@@ -99,7 +99,7 @@ const handleSubmit = async () => {
       <!-- Brands -->
       <div class="relative">
         <!-- Card -->
-        <div class="flex flex-col border border-gray-200 rounded-xl p-4 sm:p-6 lg:p-10">
+        <div class="flex flex-col border border-gray-200 rounded-xl p-20">
           <h2 class="text-xl font-semibold text-gray-800 dark:text-neutral-200">
             Fill in the form
           </h2>
@@ -109,18 +109,18 @@ const handleSubmit = async () => {
             <div v-if="submitStatus === 'success'" class="mb-4 p-4 text-green-700 bg-green-100 rounded-lg">
               ✅ Thank you! Your message has been sent successfully. We'll get back to you soon.
             </div>
-            
+
             <!-- Error Message -->
             <div v-if="submitStatus === 'error'" class="mb-4 p-4 text-red-700 bg-red-100 rounded-lg">
               ❌ {{ errorMessage }}
             </div>
-            
+
             <div class="mt-6 grid gap-4 lg:gap-6">
               <!-- Grid -->
               <div class="grid grid-cols-1 sm:grid-cols-2 gap-4 lg:gap-6">
                 <div>
-                  <InputBox 
-                    label="First Name" 
+                  <InputBox
+                    label="First Name"
                     v-model="formData.firstName"
                     :disabled="isSubmitting"
                     required
@@ -128,8 +128,8 @@ const handleSubmit = async () => {
                 </div>
 
                 <div>
-                  <InputBox 
-                    label="Last Name" 
+                  <InputBox
+                    label="Last Name"
                     v-model="formData.lastName"
                     :disabled="isSubmitting"
                     required
@@ -139,8 +139,8 @@ const handleSubmit = async () => {
               <!-- End Grid -->
 
               <div>
-                <InputBox 
-                  label="Work Email" 
+                <InputBox
+                  label="Work Email"
                   type="email"
                   v-model="formData.email"
                   :disabled="isSubmitting"
@@ -151,16 +151,16 @@ const handleSubmit = async () => {
               <!-- Grid -->
               <div class="grid grid-cols-1 sm:grid-cols-2 gap-4 lg:gap-6">
                 <div>
-                  <InputBox 
-                    label="Company" 
+                  <InputBox
+                    label="Company"
                     v-model="formData.company"
                     :disabled="isSubmitting"
                   />
                 </div>
 
                 <div>
-                  <InputBox 
-                    label="Company Website" 
+                  <InputBox
+                    label="Company Website"
                     v-model="formData.website"
                     :disabled="isSubmitting"
                     placeholder="https://example.com"
@@ -185,7 +185,7 @@ const handleSubmit = async () => {
                 ></textarea>
               </div>
             </div>
-            
+
             <!-- Submit Button -->
             <div class="mt-6 grid">
               <button

@@ -86,6 +86,7 @@ import EasyDataTable from 'vue3-easy-data-table'
 import BaseButton from '@/components/atoms/BaseButton.vue'
 import { getAllDesigns, deleteDesign, saveDesign } from '@/api/designs.js'
 import { generatePolotnoPreviewById } from '@/services/polotnoPreviewService.js'
+import { debugPreviewGeneration } from '@/debug/previewDebug.js'
 
 const headers = [
   { text: 'Design Name', value: 'name' },
@@ -126,6 +127,7 @@ async function generateMissingPreviews() {
   const designsWithoutPreviews = designs.value.filter(d => !d.imageUrl)
 
   if (designsWithoutPreviews.length === 0) {
+    alert('All designs already have previews!')
     return
   }
 
@@ -173,6 +175,8 @@ async function generateMissingPreviews() {
       // Add a small delay to prevent overwhelming the browser
       await new Promise(resolve => setTimeout(resolve, 100))
     }
+
+    alert('Preview generation completed!')
   } catch (error) {
     console.error('Error in batch preview generation:', error)
     alert('Some previews failed to generate. Check console for details.')
@@ -246,5 +250,11 @@ const filterOptions = computed(() => {
 onMounted(async () => {
   await fetchDesigns();
   await generateMissingPreviews();
+
+  // Run debug to understand preview generation issues
+  setTimeout(() => {
+    console.log('🔧 Running preview generation debug...');
+    debugPreviewGeneration();
+  }, 2000);
 })
 </script>

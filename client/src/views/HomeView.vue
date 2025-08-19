@@ -8,7 +8,7 @@ import Footer from '@/components/organisms/footer/FooterLayout.vue'
 </script>
 
 <template>
-  <main id="app">
+  <main id="app" class="relative overflow-clip">
     <Header />
     <Hero />
     <FeatureList />

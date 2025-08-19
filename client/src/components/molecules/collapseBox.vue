@@ -5,7 +5,7 @@ defineProps({
 </script>
 
 <template>
-  <div class="hs-accordion hs-accordion-active:bg-gray-100 rounded-xl p-6">
+  <div class="hs-accordion hs-accordion-active:bg-gray-200 rounded-xl p-6">
     <button
       class="hs-accordion-toggle group pb-3 inline-flex items-center justify-between gap-x-3 w-full md:text-lg font-semibold text-start text-gray-800 rounded-lg transition"
       aria-expanded="false"

@@ -246,5 +246,14 @@ const filterOptions = computed(() => {
 onMounted(async () => {
   await fetchDesigns();
   await generateMissingPreviews();
+<<<<<<< Updated upstream
+=======
+
+  // Run debug to understand preview generation issues
+  setTimeout(() => {
+    console.log('🔧 Running preview generation debug...');
+    debugPreviewGeneration();
+  }, 2000);
+>>>>>>> Stashed changes
 })
 </script>

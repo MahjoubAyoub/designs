@@ -33,17 +33,23 @@ function handleSave() {
 </script>
 
 <template>
-  <header class="bg-white shadow-sm p-1 flex justify-between items-center">
+  <header class="bg-white shadow-sm flex justify-between items-center gap-15 border-b border-gray-300">
     <router-link
-      class="flex items-center mx-2 text-gray-600 hover:text-blue-600 focus:outline-none"
-      to="/dashboard/designs"
-      >Go Back</router-link
-    >
-    <BaseInput v-model="name" type="text" placeholder="Design Name" class="!w-auto mr-auto" />
-    <div class="flex items-center mx-4">
-      <label class="mr-2 font-medium">{{ isPublic ? 'Public' : 'Private' }}</label>
-      <input type="checkbox" v-model="isPublic" class="form-checkbox h-5 w-5 text-blue-600" />
+      class=" border-r border-gray-300 px-10 py-10 rounded-none"
+      to="/dashboard/designs">
+        <BaseIcon class="text-black" name="ChevronLeft" size="25" />
+    </router-link>
+    <BaseInput v-model="name" type="text" placeholder="Design Name" class="!w-auto mr-auto border-0 border-b rounded-none py-5 px-5 focus:!ring-0 focus:!outline-0" />
+    <div class="flex items-center gap-15">
+      <label for="hs-public" class="text-sm text-gray-500">{{ isPublic ? 'Public' : 'Private' }}</label>
+      <label for="hs-public" class="relative inline-block w-[36px] h-[20px] cursor-pointer">
+        <input type="checkbox" id="hs-public" v-model="isPublic" class="peer sr-only" checked="">
+        <span class="absolute inset-0 bg-gray-200 rounded-full transition-colors duration-200 ease-in-out peer-checked:bg-blue-600 dark:bg-neutral-700 dark:peer-checked:bg-blue-500 peer-disabled:opacity-50 peer-disabled:pointer-events-none"></span>
+        <span class="absolute top-1/2 start-0.5 -translate-y-1/2 size-15 bg-white rounded-full shadow-xs transition-transform duration-200 ease-in-out peer-checked:translate-x-full"></span>
+      </label>
     </div>
-    <BaseButton class="bg-blue-600 text-white px-4 py-2 rounded-lg" @click="handleSave">Save Design </BaseButton>
+    <BaseButton class="border-0 border-l px-15 py-15 rounded-none" @click="handleSave">
+      <BaseIcon name="Save" size="20" />
+    </BaseButton>
   </header>
 </template>

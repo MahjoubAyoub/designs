@@ -69,7 +69,10 @@ const PolotnoEditor = ({ width = 1024, height = 1024, storeRef, onAutoSave, init
 
   return React.createElement(
     PolotnoContainer,
-    { style: { width: '100%', height: '100vh' } },
+    {
+      style: { width: '100%', height: '100vh' },
+      className: "polotno-app-container !h-full"
+    },
     [
       React.createElement(
         SidePanelWrap,

@@ -10,13 +10,13 @@ defineProps({
 </script>
 
 <template>
-  <div class="md:flex md:items-center gap-40" :class="{ 'md:flex-row-reverse': reverse }">
+  <div class="flex lg:items-center max-lg:flex-col gap-20 lg:gap-40" :class="{ 'md:flex-row-reverse': reverse }">
     <!-- Image -->
-    <div class="basis-1/2">
+    <div class="lg:basis-2/3">
       <img class="rounded-xl" src="@/assets/images/feature.jpg" alt="Features Image" />
     </div>
     <!-- Content -->
-    <div class="basis-1/2">
+    <div class="lg:basis-1/3">
       <div class="space-y-6 sm:space-y-8">
         <!-- Title -->
         <div class="space-y-2 md:space-y-4">
@@ -31,7 +31,7 @@ defineProps({
 
         <!-- List -->
         <ul class="space-y-2 sm:space-y-4">
-          <li class="flex gap-x-3" v-for="(item, index) in items" :key="index">
+          <li class="flex gap-x-3 items-center" v-for="(item, index) in items" :key="index">
             <span
               class="mt-0.5 size-5 flex justify-center items-center rounded-full bg-blue-50 text-blue-600 dark:bg-blue-800/30 dark:text-blue-500"
             >

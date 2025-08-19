@@ -7,16 +7,16 @@ import Footer from '@/components/organisms/footer/FooterLayout.vue'
 <template>
   <main>
     <div class="flex overflow-hidden min-h-screen">
-      <div class="flex-auto grow-0 shrink-0 max-lg:hidden">
+      <div class="flex-auto grow-0 shrink-0">
         <SideBar />
       </div>
-      <div class="flex-1 flex flex-col">
+      <div class="flex-1 flex flex-col overflow-hidden">
         <Header />
         <div class="flex-1 p-20 bg-gray-100">
           <router-view />
         </div>
         <div>
-          <Footer />
+          <!-- <Footer /> -->
         </div>
       </div>
     </div>

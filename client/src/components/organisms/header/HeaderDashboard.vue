@@ -1,12 +1,10 @@
 <script setup>
 import { ref, onMounted, onUnmounted, computed } from 'vue';
-import { useRouter } from 'vue-router';
 import BaseButton from '@/components/atoms/BaseButton.vue';
 import BaseIcon from '@/components/atoms/BaseIcon.vue';
 
 const userName = ref('');
 const userImage = ref('');
-const router = useRouter();
 
 // Computed property to determine home link based on authentication status
 const homeLink = computed(() => {
@@ -85,21 +83,28 @@ function handleLogout() {
 <template>
   <header class="bg-white border-b border-gray-200">
     <nav class="">
-      <div class="flex justify-between items-center gap-x-1">
-        <router-link
-          class="flex-none font-semibold text-xl text-black focus:outline-hidden p-20 focus:opacity-80 dark:text-white"
-          :to="homeLink"
-          aria-label="Brand"
-          >Designih</router-link
+      <div class="flex justify-between items-center px-20">
+        <!-- Hamburger -->
+        <BaseButton
+          type="button"
+          class="border-0 !p-0 lg:hidden"
+          aria-haspopup="dialog"
+          aria-expanded="false"
+          aria-controls="hs-application-sidebar"
+          aria-label="Toggle navigation"
+          data-hs-overlay="#dashboard-sidebar"
         >
-
-        <div class="hs-dropdown relative inline-flex">
+          <span class="sr-only">Toggle Navigation</span>
+          <BaseIcon size="22" name="PanelLeftOpen" />
+        </BaseButton>
+        <!-- Account -->
+        <div class="hs-dropdown relative inline-flex ml-auto">
           <BaseButton
             class="hs-dropdown-toggle py-15 gap-10 border-0 border-l-1 border-gray-200 rounded-none"
             type="button"
           >
             <img
-              class="w-40 h-40 rounded-full object-cover"
+              class="w-30 h-30 rounded-full object-cover"
               :src="userImage"
               alt="Profile"
               @error="(e) => e.target.src = 'https://images.ctfassets.net/h6goo9gw1hh6/2sNZtFAWOdP1lmQ33VwRN3/24e953b920a9cd0ff2e1d587742a2472/1-intro-photo-final.jpg?w=1200&h=992&fl=progressive&q=70&fm=jpg'"
@@ -107,16 +112,16 @@ function handleLogout() {
             {{ userName }}
           </BaseButton>
           <div
-            class="hs-dropdown-menu border border-gray-200 rounded-lg transition-[opacity,margin] duration hs-dropdown-open:opacity-100 opacity-0 w-56 hidden z-10 mt-2 bg-white"
+            class="hs-dropdown-menu border border-gray-200 rounded-lg transition-[opacity,margin] duration hs-dropdown-open:opacity-100 opacity-0 w-56 hidden z-10 p-2 mt-2 bg-white"
           >
             <router-link
               to="/dashboard/settings"
-              class="w-full justify-start text-16 border-0 border-b rounded-none"
+              class="flex items-center gap-x-3 py-2 px-3 rounded-lg text-sm text-gray-600 hover:bg-gray-100"
             >
               <BaseIcon name="Info" />
               Account Info
             </router-link>
-            <BaseButton class="w-full justify-start text-16 border-0 rounded-none" @click="handleLogout">
+            <BaseButton class="gap-x-3 py-2 px-3 rounded-lg w-full justify-start border-0 font-normal text-sm text-gray-600 hover:bg-gray-100" @click="handleLogout">
               <BaseIcon name="LogOut" />
               Logout
             </BaseButton>

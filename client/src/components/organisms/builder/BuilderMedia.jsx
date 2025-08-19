@@ -38,7 +38,7 @@ const CombinedMediaPanel = observer(({ store }) => {
         ))}
       </nav>
       {/* Panels */}
-      <div className="p-20 overflow-auto" data-hs-tab-content>
+      <div className="p-20 h-[calc(100%_-_40px)] overflow-auto" data-hs-tab-content>
         <div id="media-upload" role="tabpanel">
           <UploadSection.Panel store={store} />
         </div>

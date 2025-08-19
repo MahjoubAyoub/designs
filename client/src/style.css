@@ -1,5 +1,7 @@
 @import 'tailwindcss';
 
+@custom-variant dark (&:where(.dark, .dark *));
+
 @import 'preline/variants.css';
 @source "../node_modules/preline/dist/*.js";
 
@@ -10,6 +12,7 @@
 
   /* Spacing */
   --spacing-5: 5px;
+  --spacing-8: 5px;
   --spacing-10: 10px;
   --spacing-15: 15px;
   --spacing-20: 20px;
@@ -17,6 +20,7 @@
   --spacing-40: 40px;
   --spacing-60: 60px;
   --spacing-70: 70px;
+  --spacing-80: 80px;
   --spacing-100: 100px;
   --spacing-300: 300px;
   --spacing-700: 700px;
@@ -47,3 +51,6 @@
 .h3 {
   @apply font-bold text-2xl mb-10;
 }
+
+/* Dashboard */
+.polotno-app-container {}

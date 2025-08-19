@@ -3,7 +3,7 @@ import Feature from '@/components/molecules/FeatureCard.vue'
 </script>
 
 <template>
-  <section class="features flex flex-col max-w-5xl my-40 mx-auto gap-40 md:gap-60 px-20">
+  <section class="features flex flex-col max-w-[1200px] my-40 mx-auto gap-40 md:gap-60 px-20">
     <h2 class="h2">Features</h2>
     <Feature
       title="Easy To Use"

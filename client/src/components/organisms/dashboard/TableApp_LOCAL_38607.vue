@@ -1,25 +1,21 @@
 <template>
-  <div class="mx-auto p-7 space-y-4 bg-white rounded-xl">
-    <h2 class="text-3xl font-bold text-gray-800 pb-20 mb-20 border-b border-gray-200">
-      Designs
-    </h2>
+  <div class="container mx-auto p-4 space-y-4 bg-white">
     <!-- Search and Button -->
-    <div class="bg-white rounded-t-lg flex items-center justify-between">
+    <div class="bg-white rounded-t-lg p-4 flex items-center justify-between">
       <div class="flex items-center space-x-2">
+        <span class="text-gray-700">Search value:</span>
         <input
           type="text"
           v-model="searchValue"
-          placeholder="Search..."
-          class="border text-14 border-gray-300 rounded-full px-15 py-5 h-40 focus:outline-none focus:ring-2 focus:ring-blue-500"
+          class="border border-gray-300 rounded-full px-3 py-1 focus:outline-none focus:ring-2 focus:ring-blue-500"
         />
       </div>
       <div class="flex space-x-2">
 
         <BaseButton
-          class="bg-blue-600 text-white text-14 px-15 py-10 rounded gap-10"
+          class="bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700"
           href="/dashboard/templates"
         >
-          <BaseIcon size="18" name="Plus" />
           Create
         </BaseButton>
       </div>
@@ -36,7 +32,7 @@
         buttons-pagination
         :rows-per-page="10"
         table-class-name="w-full border-collapse min-w-[600px]"
-        header-class-name="bg-gray-800 text-white font-semibold text-sm sticky top-0"
+        header-class-name="bg-gray-800 text-white font-semibold text-sm sticky top-0 z-10"
         body-row-class-name="even:bg-gray-100 odd:bg-white hover:bg-gray-200"
         body-item-class-name="p-3 border-b border-gray-300"
       >

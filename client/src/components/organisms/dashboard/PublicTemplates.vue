@@ -1,7 +1,9 @@
 <template>
-  <div class="bg-white rounded-xl shadow-xs p-4 sm:p-7">
-  <!-- Card Blog -->
-  <div class="max-w-[85rem] px-4 py-10 sm:px-6 lg:px-8 lg:py-14 mx-auto">
+  <div class="bg-white rounded-xl shadow-xs p-7">
+    <!-- Card Blog -->
+    <h2 class="text-3xl font-bold text-gray-800 pb-20 mb-20 border-b border-gray-200">
+      Public Designs
+    </h2>
     <!-- Loading State -->
     <div v-if="isLoading" class="text-center text-gray-500 py-10">
       <div class="inline-block animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
@@ -74,11 +76,9 @@
     </div>
     <!-- No Designs Message -->
     <div v-else class="text-center text-gray-500 py-10">No public designs available.</div>
-    </div>
-    <!-- End Grid -->
 
-  <!-- End Card Blog -->
-   </div>
+    <!-- End Card Blog -->
+  </div>
 </template>
 
 <script setup>

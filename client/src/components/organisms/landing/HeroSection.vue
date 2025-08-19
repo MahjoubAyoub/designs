@@ -2,7 +2,7 @@
 
 <template>
   <!-- Hero -->
-  <div class="relative overflow-hidden">
+  <div class="relative bg-gray-100 overflow-hidden">
     <div class="max-w-[85rem] mx-auto px-4 sm:px-6 lg:px-8 py-24">
       <!-- Title -->
       <div class="mt-5 max-w-xl text-center mx-auto">
@@ -12,7 +12,7 @@
       </div>
       <!-- End Title -->
 
-      <div class="mt-5 max-w-3xl text-center mx-auto">
+      <div class="mt-5 max-w-3xl text-center mx-auto my-20">
         <p class="text-lg text-gray-600 dark:text-neutral-400 pt-4 lg:text-xl">
           Where Creativity Meets Simplicity.
         </p>
@@ -23,7 +23,7 @@
         <BaseButton
           reverse="true"
           href="/signup"
-          class="bg-primary text-white text-14 font-medium border border-transparent rounded-full"
+          class="bg-primary text-white text-14 font-medium py-10 px-20 border border-transparent rounded-full"
         >
           <BaseIcon name="Feather"></BaseIcon>
           Start now

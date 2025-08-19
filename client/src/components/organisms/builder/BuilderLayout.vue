@@ -5,7 +5,7 @@
     :onSave="saveDesignHandler"
     @update:public="handlePublicChange"
   />
-  <div ref="container" class="w-full h-screen" />
+  <div ref="container" class="builder w-full h-[calc(100vh_-_50px)]" />
   <JsonResumeEditor
     v-if="designData"
     :designData="designData"
