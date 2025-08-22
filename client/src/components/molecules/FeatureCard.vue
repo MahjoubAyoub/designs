@@ -1,5 +1,7 @@
 <script setup>
-defineProps({
+import { computed } from 'vue'
+
+const props = defineProps({
   title: String,
   text: String,
   image: String,
@@ -7,13 +9,20 @@ defineProps({
   reverse: Boolean,
   items: Array,
 })
+const resolvedImage = computed(() => {
+  try {
+    return new URL(props.image, import.meta.url).href
+  } catch {
+    return props.image // fallback if it's already a valid URL
+  }
+})
 </script>
 
 <template>
   <div class="flex lg:items-center max-lg:flex-col gap-20 lg:gap-40" :class="{ 'md:flex-row-reverse': reverse }">
     <!-- Image -->
     <div class="lg:basis-2/3">
-      <img class="rounded-xl" src="@/assets/images/feature.jpg" alt="Features Image" />
+      <img class="rounded-xl" :src="resolvedImage" alt="Features Image" />
     </div>
     <!-- Content -->
     <div class="lg:basis-1/3">

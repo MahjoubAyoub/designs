@@ -21,9 +21,6 @@
     <!-- Generate Missing Previews Button -->
     <div v-else-if="publicDesigns.length > 0" class="space-y-4">
       <div class="flex items-center justify-between mb-4">
-        <h3 class="text-lg font-medium text-gray-800 dark:text-neutral-200">
-          Public Designs
-        </h3>
         <button
           v-if="publicDesigns.some(d => !d.preview && !d.imageUrl)"
           @click="generateMissingPreviews"
@@ -84,7 +81,7 @@
 <script setup>
 import { ref, onMounted } from 'vue'
 import { getPublicDesigns, saveDesign } from '@/api/designs.js'
-import { generatePolotnoPreviewFromData, generatePolotnoPreviewById } from '@/services/polotnoPreviewService.js'
+import {  generatePolotnoPreviewById } from '@/services/polotnoPreviewService.js'
 
 const publicDesigns = ref([])
 const isLoading = ref(true)
@@ -107,54 +104,7 @@ async function fetchPublicDesigns() {
   }
 }
 
-// Test function to debug preview generation using design ID
-async function testPreviewGeneration() {
-  console.log('🧪 Testing Vite preview generation by design ID...')
 
-  if (publicDesigns.value.length === 0) {
-    alert('No designs available to test!')
-    return
-  }
-
-  const testDesign = publicDesigns.value[0]
-  console.log('🎯 Testing with design ID:', testDesign.id)
-
-  try {
-    // Test using design ID to fetch and render canvas elements
-    const previewDataUrl = await generatePolotnoPreviewById(testDesign.id, 400, 300)
-    console.log('✅ Test preview generated successfully:', previewDataUrl ? 'Yes' : 'No')
-
-    if (previewDataUrl) {
-      // Create a temporary image to show the result
-      const img = new Image()
-      img.src = previewDataUrl
-      img.style.border = '2px solid green'
-      img.style.maxWidth = '200px'
-      img.style.maxHeight = '150px'
-
-      // Show in a new window for testing
-      const newWindow = window.open('', '_blank', 'width=400,height=300')
-      newWindow.document.body.appendChild(img)
-      newWindow.document.title = `Test Preview Result - Design ID: ${testDesign.id}`
-
-      // Also test the regular method for comparison
-      console.log('🔄 Also testing with design data object...')
-      const previewDataUrl2 = await generatePolotnoPreviewFromData(testDesign, 400, 300)
-      if (previewDataUrl2) {
-        const img2 = new Image()
-        img2.src = previewDataUrl2
-        img2.style.border = '2px solid blue'
-        img2.style.maxWidth = '200px'
-        img2.style.maxHeight = '150px'
-        img2.style.marginLeft = '10px'
-        newWindow.document.body.appendChild(img2)
-      }
-    }
-  } catch (error) {
-    console.error('Test preview generation failed:', error)
-    alert('Test failed! Check console for details.')
-  }
-}
 
 // Generate preview for a single design
 async function generateSingleDesignPreview(design) {

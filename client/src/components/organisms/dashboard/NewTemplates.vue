@@ -314,7 +314,7 @@ import InputBox from '@/components/molecules/InputBox.vue'
 import BaseButton from '@/components/atoms/BaseButton.vue'
 import { createTemplate, getAllTemplates, updateTemplate } from '@/api/templates.js'
 import { importTemplate, createDesignFromTemplate } from '@/services/templateService.js'
-import { generatePolotnoPreviewById, generatePolotnoPreviewFromData } from '@/services/polotnoPreviewService.js'
+import { generatePolotnoPreviewFromData } from '@/services/polotnoPreviewService.js'
 import JsonResumeForm from './JsonResumeForm.vue'
 
 // Reactive state for form data
@@ -331,7 +331,6 @@ const isLoadingTemplates = ref(false)
 const templatesError = ref(null)
 const router = useRouter()
 const fileInput = ref(null)
-const generatingPublicPreviews = ref(false)
 
 // Predefined canvas sizes
 const canvasSizes = [
@@ -396,54 +395,6 @@ async function handleSubmit() {
   }
 }
 
-async function generateSingleDesignPreview(design) {
-  try {
-    const previewDataUrl = await generatePolotnoPreviewById(design.id, 400, 300)
-    console.log('Preview size (bytes):', previewDataUrl.length);
-    if (previewDataUrl) {
-      // Update design with preview
-      const updateData = {
-        id: design.id,
-        name: design.name,
-        public: design.public,
-        data: design.data,
-        imageUrl: previewDataUrl,
-        userId: design.userId
-      }
-
-      await saveDesign(updateData)
-      design.imageUrl = previewDataUrl
-      console.log(`✓ Preview generated for design: ${design.name}`)
-    }
-  } catch (error) {
-    console.error(`Error generating preview for design ${design.name}:`, error)
-    alert('Failed to generate preview. Please try again.')
-  }
-}
-
-// Generate previews for all public designs without previews
-async function generatePublicPreviews() {
-  const designsWithoutPreviews = publicDesigns.value.filter(d => !d.imageUrl)
-
-  if (designsWithoutPreviews.length === 0) {
-    return
-  }
-
-  generatingPublicPreviews.value = true
-
-  try {
-    for (const design of designsWithoutPreviews) {
-      await generateSingleDesignPreview(design)
-      // Add a small delay
-      await new Promise(resolve => setTimeout(resolve, 100))
-    }
-  } catch (error) {
-    console.error('Error in batch preview generation:', error)
-    alert('Some previews failed to generate.')
-  } finally {
-    generatingPublicPreviews.value = false
-  }
-}
 
 // Function to copy a public design for the current user
 async function copyDesign(design) {

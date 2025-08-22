@@ -121,7 +121,7 @@ function handleLogout() {
               <BaseIcon name="Info" />
               Account Info
             </router-link>
-            <BaseButton class="gap-x-3 py-2 px-3 rounded-lg w-full justify-start border-0 font-normal text-sm text-gray-600 hover:bg-gray-100" @click="handleLogout">
+            <BaseButton class="gap-x-3 py-2 px-3 rounded-lg w-full justify-start border-0 font-normal text-sm text-gray-600 hover:bg-gray-100" href="/" router @click="handleLogout">
               <BaseIcon name="LogOut" />
               Logout
             </BaseButton>

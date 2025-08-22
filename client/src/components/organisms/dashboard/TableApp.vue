@@ -14,7 +14,6 @@
         />
       </div>
       <div class="flex space-x-2">
-
         <BaseButton
           class="bg-blue-600 text-white text-14 px-15 py-10 rounded gap-10"
           href="/dashboard/templates"
@@ -24,7 +23,6 @@
         </BaseButton>
       </div>
     </div>
-
 
     <!-- Data Table -->
     <div class="overflow-x-auto">
@@ -40,35 +38,37 @@
         body-row-class-name="even:bg-gray-100 odd:bg-white hover:bg-gray-200"
         body-item-class-name="p-3 border-b border-gray-300"
       >
-        <!-- Preview image cell, clickable -->
-        <template #item-preview="{ preview, id }">
-          <router-link :to="`/create/${id}`">
-            <div class="w-20 h-15 relative overflow-hidden rounded-md border border-gray-300 cursor-pointer hover:opacity-80 transition-opacity">
-              <img
-                v-if="preview && preview !== ''"
-                :src="preview"
-                alt="Design preview"
-                class="w-full h-full object-cover"
-                @error="handleImageError"
-              />
-              <div
-                v-else
-                class="w-full h-full bg-gray-100 flex items-center justify-center text-gray-400"
-              >
-                <div class="text-center">
-                  <svg class="w-6 h-6 mx-auto mb-1" fill="currentColor" viewBox="0 0 20 20">
-                    <path fill-rule="evenodd" d="M4 3a2 2 0 00-2 2v10a2 2 0 002 2h12a2 2 0 002-2V5a2 2 0 00-2-2H4zm12 12H4l4-8 3 6 2-4 3 6z" clip-rule="evenodd" />
-                  </svg>
-                  <span class="text-xs">No Preview</span>
+        <!-- Name cell with popover -->
+        <template #item-name="{ name, id, preview }">
+          <div class="hs-tooltip [--trigger:hover] [--placement:right] inline-block">
+            <router-link :to="`/create/${id}`" class="hs-tooltip-toggle text-blue-600 hover:underline cursor-pointer">
+              {{ name }}
+            </router-link>
+            <!-- Popover Content -->
+            <div class="hs-tooltip-content hs-tooltip-shown:opacity-100 hs-tooltip-shown:visible hidden opacity-0 transition-opacity absolute invisible z-10 max-w-xs w-full bg-white border border-gray-100 rounded-xl shadow-md after:absolute after:top-0 after:-start-4 after:w-4 after:h-full dark:bg-neutral-800 dark:border-neutral-700" role="tooltip">
+              <div class="p-3">
+                <img
+                  v-if="preview && preview !== ''"
+                  :src="preview"
+                  alt="Design preview"
+                  class="w-full h-auto rounded-md"
+                  @error="handleImageError"
+                />
+                <div
+                  v-else
+                  class="w-full h-32 bg-gray-100 flex items-center justify-center text-gray-400 rounded-md"
+                >
+                  <div class="text-center">
+                    <svg class="w-6 h-6 mx-auto mb-1" fill="currentColor" viewBox="0 0 20 20">
+                      <path fill-rule="evenodd" d="M4 3a2 2 0 00-2 2v10a2 2 0 002 2h12a2 2 0 002-2V5a2 2 0 00-2-2H4zm12 12H4l4-8 3 6 2-4 3 6z" clip-rule="evenodd" />
+                    </svg>
+                    <span class="text-xs">No Preview</span>
+                  </div>
                 </div>
               </div>
             </div>
-          </router-link>
-        </template>
-
-        <!-- Name cell, clickable -->
-        <template #item-name="{ name, id }">
-          <router-link :to="`/create/${id}`" class="text-blue-600 hover:underline cursor-pointer">{{ name }}</router-link>
+            <!-- End Popover Content -->
+          </div>
         </template>
 
         <!-- Delete button cell -->
@@ -89,7 +89,6 @@ import { generatePolotnoPreviewById } from '@/services/polotnoPreviewService.js'
 
 const headers = [
   { text: 'Design Name', value: 'name' },
-  { text: 'Preview', value: 'preview' },
   { text: 'Creation Date', value: 'dateCreation', sortable: true },
   { text: 'Update Date', value: 'dateModification', sortable: true },
   { text: 'Delete', value: 'delete' },
