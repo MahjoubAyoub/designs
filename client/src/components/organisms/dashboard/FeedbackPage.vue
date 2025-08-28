@@ -1,7 +1,7 @@
 <script setup>
 import { ref } from 'vue'
 import { sendContactMessage } from '@/api/contact.js'
-import { createTestimonial, deleteTestimonialsWithNullUserId } from '@/api/testimonials.js'
+import { createTestimonial } from '@/api/testimonials.js'
 import BaseButton from '@/components/atoms/BaseButton.vue'
 
 // Form data
@@ -58,20 +58,20 @@ const handleSubmit = async () => {
     isSubmitting.value = true
     submitStatus.value = null
     errorMessage.value = ''
-    
+
     // Validate form
     validateForm()
-    
+
     // Prepare data for API (reusing contact API structure)
     const contactData = {
       name: feedbackData.value.name,
       email: feedbackData.value.email,
       message: `Dashboard Feedback:\n\n${feedbackData.value.feedback}`
     }
-    
+
     // Send to backend using existing contact API
     await sendContactMessage(contactData)
-    
+
     // Also create a testimonial entry (initially not approved)
     const testimonialData = {
       name: feedbackData.value.name,
@@ -81,7 +81,7 @@ const handleSubmit = async () => {
       company: feedbackData.value.company,
       isApproved: true
     }
-    
+
     try {
       await createTestimonial(testimonialData)
       console.log('Testimonial created successfully')
@@ -89,15 +89,15 @@ const handleSubmit = async () => {
       console.warn('Failed to create testimonial:', testimonialError)
       // Don't fail the whole process if testimonial creation fails
     }
-    
+
     // Success
     submitStatus.value = 'success'
-    
+
     // Reset form fields (keep name and email for convenience)
     feedbackData.value.feedback = ''
     feedbackData.value.jobTitle = ''
     feedbackData.value.company = ''
-    
+
   } catch (error) {
     console.error('Feedback form error:', error)
     submitStatus.value = 'error'
@@ -118,7 +118,7 @@ const handleSubmit = async () => {
         We value your feedback! Let us know what you think about our platform and how we can improve.
       </p>
     </div>
-    
+
     <!-- Success Message -->
     <div v-if="submitStatus === 'success'" class="mb-6 p-4 text-green-700 bg-green-100 rounded-lg border border-green-200">
       <div class="flex items-center">
@@ -129,7 +129,7 @@ const handleSubmit = async () => {
       </div>
       <p class="mt-1 text-sm">We appreciate your input and will use it to improve our platform.</p>
     </div>
-    
+
     <!-- Error Message -->
     <div v-if="submitStatus === 'error'" class="mb-6 p-4 text-red-700 bg-red-100 rounded-lg border border-red-200">
       <div class="flex items-center">
@@ -140,7 +140,7 @@ const handleSubmit = async () => {
       </div>
       <p class="mt-1 text-sm">{{ errorMessage }}</p>
     </div>
-    
+
     <!-- Feedback Form -->
     <div class="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
       <form @submit.prevent="handleSubmit" class="space-y-6">
@@ -159,7 +159,7 @@ const handleSubmit = async () => {
             required
           />
         </div>
-        
+
         <!-- Email Field -->
         <div>
           <label for="feedback-email" class="block text-sm font-medium text-gray-700 mb-2">
@@ -175,7 +175,7 @@ const handleSubmit = async () => {
             required
           />
         </div>
-        
+
         <!-- Job Title Field -->
         <div>
           <label for="feedback-job-title" class="block text-sm font-medium text-gray-700 mb-2">
@@ -190,7 +190,7 @@ const handleSubmit = async () => {
             placeholder="Enter your job title (optional)"
           />
         </div>
-        
+
         <!-- Company Field -->
         <div>
           <label for="feedback-company" class="block text-sm font-medium text-gray-700 mb-2">
@@ -205,7 +205,7 @@ const handleSubmit = async () => {
             placeholder="Enter your company (optional)"
           />
         </div>
-        
+
         <!-- Feedback Field -->
         <div>
           <label for="feedback-message" class="block text-sm font-medium text-gray-700 mb-2">
@@ -221,7 +221,7 @@ const handleSubmit = async () => {
             required
           ></textarea>
         </div>
-        
+
         <!-- Submit Button -->
         <div class="flex justify-end">
           <BaseButton
@@ -249,7 +249,7 @@ const handleSubmit = async () => {
         <div>
           <h3 class="text-sm font-medium text-blue-800 mb-1">How we use your feedback</h3>
           <p class="text-sm text-blue-700">
-            Your feedback helps us understand what's working well and what needs improvement. 
+            Your feedback helps us understand what's working well and what needs improvement.
             We review all feedback and use it to prioritize new features and bug fixes.
           </p>
         </div>

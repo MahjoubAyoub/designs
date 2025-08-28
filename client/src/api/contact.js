@@ -5,10 +5,10 @@ export async function sendContactMessage(data) {
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify(data),
   });
-  
+
   if (!res.ok) {
     throw new Error('Failed to send contact message');
   }
-  
+
   return res.json();
 }

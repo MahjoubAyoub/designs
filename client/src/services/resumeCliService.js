@@ -1,11 +1,3 @@
-// src/services/resumeCliService.js
-// Service for integrating with JSON Resume CLI and themes
-// Browser-compatible version without Node.js dependencies
-
-/**
- * Available JSON Resume themes - Verified themes available on npm
- * Based on: https://www.npmjs.com/search?q=jsonresume-theme and https://registry.jsonresume.org/themes
- */
 export const AVAILABLE_THEMES = [
   {
     id: 'modern',

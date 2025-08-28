@@ -1,13 +1,16 @@
 <script setup>
 import InputBox from '@/components/molecules/InputBox.vue'
 
-const email = defineModel('email')
+const code = defineModel('code')
 
 const emit = defineEmits(['submit'])
 
 const handleSubmit = () => {
-  if (email.value) {
-    emit('submit', email.value)
+  console.log('VerifyCodeModal: submitting code:', code.value) // Add this debug log
+  if (code.value) {
+    emit('submit', code.value)
+  } else {
+    console.log('VerifyCodeModal: No code entered') // Add this debug log
   }
 }
 </script>
@@ -19,27 +22,27 @@ const handleSubmit = () => {
     >
       <div class="p-4 sm:p-7">
         <div class="text-center">
-          <h1 class="block text-2xl font-bold text-gray-800">Forgot password?</h1>
+          <h1 class="block text-2xl font-bold text-gray-800">Verify Code</h1>
           <p class="mt-2 text-sm text-gray-600 dark:text-neutral-400">
-            Remember your password?
+            Enter the 6-digit code sent to your email.
             <a
               class="text-blue-600 decoration-2 hover:underline focus:outline-hidden focus:underline font-medium dark:text-blue-500"
-              href="login"
+              href="forgot-password"
             >
-              Sign in here
+              Resend code
             </a>
           </p>
         </div>
 
         <form @submit.prevent="handleSubmit" class="flex flex-col gap-4 mt-10">
           <InputBox
-            id="email_box"
-            label="Your Email Address"
-            placeholder="Insert E-mail"
-            v-model="email"
+            id="code_box"
+            label="6-Digit Code"
+            placeholder="Enter code"
+            v-model="code"
           />
 
-          <BaseButton type="submit" class="w-full py-10"> Reset password </BaseButton>
+          <BaseButton type="submit" class="w-full py-10"> Verify </BaseButton>
         </form>
       </div>
     </div>

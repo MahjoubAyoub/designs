@@ -1,6 +1,7 @@
 import express from 'express';
 import passport from '../../config/passport.js';
 import jwt from 'jsonwebtoken';
+import * as authController from './auth.controller.js'; // Adjust path if auth.controller.js is not in the same directory
 
 const router = express.Router();
 const JWT_SECRET = process.env.JWT_SECRET || 'your-secret-key';
@@ -60,5 +61,15 @@ router.post('/logout', (req, res) => {
     res.json({ message: 'Logged out successfully' });
   });
 });
+
+// New local auth routes
+// Using standard path names for better convention; adjust if specific paths are required.
+// If you prefer /createUser and /loginUser, change accordingly.
+router.post('/register', authController.createUser);
+router.post('/login', authController.loginUser);
+router.post('/requestPasswordReset', authController.requestPasswordReset);
+router.post('/verifyResetCode', authController.verifyResetCode);
+router.post('/resetPassword', authController.resetPassword);
+router.post('/changePassword', authController.changePassword); // Consider adding authentication middleware (e.g., JWT auth) for this route in production
 
 export default router;

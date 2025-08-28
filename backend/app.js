@@ -7,6 +7,7 @@ import { fileURLToPath } from 'url';
 import { dirname, join } from 'path';
 import session from 'express-session';
 import passport from './config/passport.js';
+import { initializeDataSource } from './config/data-source.js'; // Import your database initializer
 
 import designRoutes from './modules/designs/design.routes.js';
 import userRoutes from './modules/users/user.routes.js'
@@ -17,6 +18,12 @@ import oauthRoutes from './modules/auth/oauth.routes.js';
 import cors from 'cors';
 
 const app = express();
+
+// Initialize database connection
+initializeDataSource().catch(error => {
+  console.error('Failed to initialize database:', error);
+  process.exit(1);
+});
 
 // Needed to replicate __dirname in ES modules
 const __filename = fileURLToPath(import.meta.url);
